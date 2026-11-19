@@ -140,4 +140,6 @@ data class HomeActions(
     val onOpenAi: () -> Unit = {},
     val onOpenThemeStore: () -> Unit = {},
     val onOpenTune: () -> Unit = {},
+    val onOpenDarkNightToolbox: () -> Unit = {},
+    val onOpenDarkNightThemeStudio: () -> Unit = {},
 )

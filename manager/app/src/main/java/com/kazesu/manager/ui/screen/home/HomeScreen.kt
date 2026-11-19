@@ -142,6 +142,8 @@ fun HomePager(
         onOpenVersionSpoof = { navigator.push(Route.VersionSpoof) },
         onOpenAi = { navigator.push(Route.AiAssistant) },
         onOpenTune = { navigator.push(Route.Tune) },
+        onOpenDarkNightToolbox = { navigator.push(Route.DarkNightToolbox) },
+        onOpenDarkNightThemeStudio = { navigator.push(Route.DarkNightThemeStudio) },
         onOpenThemeStore = {
             themeStoreConfirmDialog.showConfirm(
                 title = themeStoreTitle,

@@ -114,9 +114,9 @@ jobs:
           ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
         run: |
           if [ "${{github.event_name}}" == "pull_request" ]; then
-            export KSU_PACKAGE_NAME="com.kazesu.manager.pr${{github.event.pull_request.number}}"
+            export KSU_PACKAGE_NAME="com.darknight.ksu.pr${{github.event.pull_request.number}}"
           elif [ "${{github.ref_type}}" != "tag" ] && [ "${{github.ref_name}}" != "main" ]; then
-            export KSU_PACKAGE_NAME="com.kazesu.manager.dev"
+            export KSU_PACKAGE_NAME="com.darknight.ksu.dev"
           fi
 
           if [ "${{ inputs.target }}" == "riscv64-linux-android" ]; then

@@ -37,6 +37,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import com.kazesu.manager.ui.component.Storefront
 import androidx.compose.material3.LargeFlexibleTopAppBar
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -129,6 +130,12 @@ fun HomePagerMaterial(
             TuneHeroCard(
                 onClick = if (state.isRootAvailable) actions.onOpenTune else actions.onInstallClick,
                 locked = !state.isRootAvailable,
+            )
+            DarkNightToolboxCard(
+                onClick = actions.onOpenDarkNightToolbox,
+            )
+            DarkNightThemeStudioCard(
+                onClick = actions.onOpenDarkNightThemeStudio,
             )
             if (state.showVersionMismatchWarning) {
                 WarningCard(
@@ -865,3 +872,72 @@ private fun previewHomeScreenState(
     kernelUAPIVersion = 1,
     managerUAPIVersion = 1,
 )
+
+
+@Composable
+private fun DarkNightToolboxCard(
+    onClick: () -> Unit,
+) {
+    ElevatedCard(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "DarkNight Toolbox",
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                Text(
+                    text = "Game Profiles • Bypass Charge • Integrity Hub • Live Logs • Rescue",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+            )
+        }
+    }
+}
+
+@Composable
+private fun DarkNightThemeStudioCard(
+    onClick: () -> Unit,
+) {
+    ElevatedCard(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "DarkNight Gradient Studio & Theme Store",
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                Text(
+                    text = "10 Aura Gradient Palettes • Online Theme Upload & Download",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+            )
+        }
+    }
+}

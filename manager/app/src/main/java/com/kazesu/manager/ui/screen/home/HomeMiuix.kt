@@ -5,6 +5,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -151,6 +152,56 @@ fun HomePagerMiuix(
                             onClick = if (state.isRootAvailable) actions.onOpenTune else actions.onInstallClick,
                             locked = !state.isRootAvailable,
                         )
+                        top.yukonga.miuix.kmp.basic.Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable(onClick = actions.onOpenDarkNightToolbox),
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    top.yukonga.miuix.kmp.basic.Text(
+                                        text = "DarkNight Toolbox",
+                                        style = top.yukonga.miuix.kmp.theme.MiuixTheme.textStyles.title4,
+                                    )
+                                    top.yukonga.miuix.kmp.basic.Text(
+                                        text = "Game Profiles • Bypass Charge • Integrity Hub • Live Logs • Rescue",
+                                        style = top.yukonga.miuix.kmp.theme.MiuixTheme.textStyles.body2,
+                                        color = top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                    )
+                                }
+                            }
+                        }
+                        top.yukonga.miuix.kmp.basic.Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable(onClick = actions.onOpenDarkNightThemeStudio),
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    top.yukonga.miuix.kmp.basic.Text(
+                                        text = "DarkNight Gradient Studio & Theme Store",
+                                        style = top.yukonga.miuix.kmp.theme.MiuixTheme.textStyles.title4,
+                                    )
+                                    top.yukonga.miuix.kmp.basic.Text(
+                                        text = "10 Aura Gradient Palettes • Online Theme Upload & Download",
+                                        style = top.yukonga.miuix.kmp.theme.MiuixTheme.textStyles.body2,
+                                        color = top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                    )
+                                }
+                            }
+                        }
                 if (state.showVersionMismatchWarning) {
                     WarningCard(
                         customText(CustomTextKey.HOME_WARN_VERSION_SPOOF),

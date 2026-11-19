@@ -25,6 +25,8 @@ jobs:
     outputs:
       expected_size: ${{ steps.extract.outputs.expected_size }}
       expected_hash: ${{ steps.extract.outputs.expected_hash }}
+      release_size: ${{ steps.extract_release.outputs.release_size }}
+      release_hash: ${{ steps.extract_release.outputs.release_hash }}
       keystore: ${{ steps.gen.outputs.keystore }}
       keystore_password: ${{ steps.gen.outputs.keystore_password }}
       key_password: ${{ steps.gen.outputs.key_password }}
@@ -76,6 +78,27 @@ jobs:
           echo "Certificate size: $SIZE_HEX ($SIZE_DEC bytes)"
           echo "Certificate hash: $HASH"
 
+      - name: Extract release keystore cert size and hash
+        if: github.event_name != 'pull_request'
+        id: extract_release
+        env:
+          PROD_KEYSTORE: ${{ secrets.KEYSTORE }}
+          PROD_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          PROD_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        run: |
+          if [ -n "$PROD_KEYSTORE" ] && [ -n "$PROD_KEY_ALIAS" ] && [ -n "$PROD_KEYSTORE_PASSWORD" ]; then
+            echo "$PROD_KEYSTORE" | tr -d ' \t\r\n' | base64 -d -i > release-check.jks
+            keytool -exportcert -alias "$PROD_KEY_ALIAS" -keystore release-check.jks -storepass "$PROD_KEYSTORE_PASSWORD" -file release-cert.der
+            SIZE_DEC=$(stat -c%s release-cert.der)
+            SIZE_HEX=$(printf '0x%04x' "$SIZE_DEC")
+            HASH=$(sha256sum release-cert.der | awk '{print $1}')
+            echo "release_size=$SIZE_HEX" >> "$GITHUB_OUTPUT"
+            echo "release_hash=$HASH" >> "$GITHUB_OUTPUT"
+            echo "DarkNightSu release cert size: $SIZE_HEX ($SIZE_DEC bytes)"
+            echo "DarkNightSu release cert hash: $HASH"
+            rm -f release-check.jks release-cert.der
+          fi
+
       - name: Generate package name for spoofed manager
         id: pkg
         run: |
@@ -89,6 +112,8 @@ jobs:
     needs: prepare
     uses: ./.github/workflows/build-lkm.yml
     with:
+      expected_size: ${{ needs.prepare.outputs.release_size || '' }}
+      expected_hash: ${{ needs.prepare.outputs.release_hash || '' }}
       expected_pr_build_size: ${{ needs.prepare.outputs.expected_size || '' }}
       expected_pr_build_hash: ${{ needs.prepare.outputs.expected_hash || '' }}
     secrets: inherit
@@ -244,11 +269,11 @@ jobs:
             export KSU_PACKAGE_NAME="${{ needs.prepare.outputs.spoofed_package_name }}"
             export BUILD_EXTRA_ARGS="-PKSU_PACKAGE_NAME=$KSU_PACKAGE_NAME -PIS_SPOOFED_BUILD=true"
           elif [ "${{ github.event_name }}" == "pull_request" ]; then
-            export KSU_PACKAGE_NAME="com.kazesu.manager.pr${{github.event.pull_request.number}}"
+            export KSU_PACKAGE_NAME="com.darknight.ksu.pr${{github.event.pull_request.number}}"
             export BUILD_EXTRA_ARGS="-PKSU_PACKAGE_NAME=$KSU_PACKAGE_NAME"
           elif [ "${{ github.ref_type }}" != "tag" ] && [ "${{ github.ref_name }}" != "main" ]; then
-            export KSU_PACKAGE_NAME="com.kazesu.manager.dev"
-            export KSU_NAME="KazeSU-DEV"
+            export KSU_PACKAGE_NAME="com.darknight.ksu.dev"
+            export KSU_NAME="DarkNightSu-DEV"
             export BUILD_EXTRA_ARGS="-PKSU_PACKAGE_NAME=$KSU_PACKAGE_NAME -PKSU_NAME=$KSU_NAME"
           fi
 
@@ -411,6 +436,7 @@ jobs:
 
   telegram-bot-api:
     name: Telegram Bot API
+    if: ${{ false }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

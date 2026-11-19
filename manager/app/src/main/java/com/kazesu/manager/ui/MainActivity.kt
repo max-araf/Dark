@@ -112,6 +112,12 @@ import com.kazesu.manager.ui.screen.dynamicmanagers.DynamicManagersScreen
 import com.kazesu.manager.ui.screen.extensions.ExtensionsScreen
 import com.kazesu.manager.ui.screen.extensions.CpuSpoofScreen
 import com.kazesu.manager.ui.screen.extensions.VersionSpoofScreen
+import androidx.compose.ui.graphics.toArgb
+import com.kazesu.manager.ui.screen.darknight.DarkNightThemeStudioScreen
+import com.kazesu.manager.ui.screen.darknight.DarkNightToolboxScreen
+import com.kazesu.manager.ui.theme.DarkNightAuraBackdrop
+import com.kazesu.manager.ui.theme.DarkNightOnboardingOverlay
+import com.kazesu.manager.ui.theme.DarkNightThemeStore
 import com.kazesu.manager.ui.screen.tune.TuneScreen
 import com.kazesu.manager.ui.screen.executemoduleaction.ExecuteModuleActionScreen
 import com.kazesu.manager.ui.screen.flash.FlashScreen
@@ -254,8 +260,12 @@ class MainActivity : ComponentActivity() {
             val captureAppBackground = uiState.customBackgroundUri.isNotEmpty() &&
                 ((uiMode == UiMode.Miuix && uiState.enableBlur) || progressiveBlurActive)
 
-            val themedAppSettings = remember(appSettings, uiState.keyColorOverride) {
-                uiState.keyColorOverride?.let { appSettings.copy(keyColor = it) } ?: appSettings
+            DarkNightThemeStore.init(context)
+            val darkNightTheme by DarkNightThemeStore.state.collectAsState()
+            val themedAppSettings = remember(appSettings, uiState.keyColorOverride, darkNightTheme) {
+                val accent = uiState.keyColorOverride
+                    ?: if (darkNightTheme.auraEnabled) darkNightTheme.palette.primaryGlow.toArgb() else appSettings.keyColor
+                appSettings.copy(keyColor = accent)
             }
             CompositionLocalProvider(
                 LocalUriHandler provides object : UriHandler {
@@ -421,6 +431,8 @@ class MainActivity : ComponentActivity() {
                                 entry<Route.DynamicManagers>(swipeDismiss = swipeDismiss) { DynamicManagersScreen() }
                                 entry<Route.Extensions>(swipeDismiss = swipeDismiss) { ExtensionsScreen() }
                                 entry<Route.Tune>(swipeDismiss = swipeDismiss) { TuneScreen() }
+                                entry<Route.DarkNightToolbox>(swipeDismiss = swipeDismiss) { DarkNightToolboxScreen() }
+                                entry<Route.DarkNightThemeStudio>(swipeDismiss = swipeDismiss) { DarkNightThemeStudioScreen() }
                                 entry<Route.CpuSpoof>(swipeDismiss = swipeDismiss) { CpuSpoofScreen() }
                                 entry<Route.VersionSpoof>(swipeDismiss = swipeDismiss) { VersionSpoofScreen() }
                                 entry<Route.BuiltinZygisk>(swipeDismiss = swipeDismiss) { BuiltinZygiskScreen() }
@@ -532,15 +544,29 @@ class MainActivity : ComponentActivity() {
                             }
                         }
 
+                        val showDarkNightAura = !hasCustomBackground && darkNightTheme.auraEnabled
+                        if (showDarkNightAura) {
+                            DarkNightAuraBackdrop(
+                                palette = darkNightTheme.palette,
+                                animateOnStart = darkNightTheme.startupAnimEnabled,
+                            )
+                        }
+
                         when (uiMode) {
                             UiMode.Material -> androidx.compose.material3.Scaffold(
-                                containerColor = if (hasCustomBackground) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer
+                                containerColor = if (hasCustomBackground || showDarkNightAura) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer
                             ) { navDisplay() }
 
                             UiMode.Miuix -> Scaffold(
-                                containerColor = if (hasCustomBackground) Color.Transparent else MiuixTheme.colorScheme.surface
+                                containerColor = if (hasCustomBackground || showDarkNightAura) Color.Transparent else MiuixTheme.colorScheme.surface
                             ) { navDisplay() }
                         }
+
+                        DarkNightOnboardingOverlay(
+                            visible = splashDismissed && !darkNightTheme.onboardingCompleted,
+                            palette = darkNightTheme.palette,
+                            onFinish = { DarkNightThemeStore.setOnboardingCompleted(context, true) },
+                        )
 
                         if (!splashDismissed) {
                             SplashScreen(

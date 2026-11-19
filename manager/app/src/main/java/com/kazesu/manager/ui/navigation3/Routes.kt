@@ -189,6 +189,14 @@ sealed interface Route : NavKey, Parcelable {
 
     @Parcelize
     @Serializable
+    data object DarkNightToolbox : Route
+
+    @Parcelize
+    @Serializable
+    data object DarkNightThemeStudio : Route
+
+    @Parcelize
+    @Serializable
     data object CpuSpoof : Route
 
     
