@@ -261,7 +261,7 @@ class MainActivity : ComponentActivity() {
                 ((uiMode == UiMode.Miuix && uiState.enableBlur) || progressiveBlurActive)
 
             DarkNightThemeStore.init(context)
-            val darkNightTheme by DarkNightThemeStore.state.collectAsState()
+            val darkNightTheme by DarkNightThemeStore.state.collectAsStateWithLifecycle()
             val themedAppSettings = remember(appSettings, uiState.keyColorOverride, darkNightTheme) {
                 val accent = uiState.keyColorOverride
                     ?: if (darkNightTheme.auraEnabled) darkNightTheme.palette.primaryGlow.toArgb() else appSettings.keyColor

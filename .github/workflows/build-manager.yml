@@ -544,3 +544,28 @@ jobs:
           APK_RELEASE=apk/release/*.apk
           chmod +x telegram-bot-api-binary
           python3 $GITHUB_WORKSPACE/scripts/ksubot.py $APK_RELEASE
+
+  diagnostics:
+    name: DarkNightSu Build Diagnostics
+    if: always()
+    needs: [prepare, build-lkm, build-ksuinit, build-kazezygisk, build-ksud, build-manager, repack-manager]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Print Unified Diagnostics Summary
+        run: |
+          {
+            echo "## DarkNightSu Build Diagnostics"
+            echo ""
+            echo "| Stage | Status |"
+            echo "| :--- | :--- |"
+            echo "| Keystore & Prepare | ${{ needs.prepare.result }} |"
+            echo "| GKI LKM Modules (.ko) | ${{ needs.build-lkm.result }} |"
+            echo "| ksuinit Binaries | ${{ needs.build-ksuinit.result }} |"
+            echo "| Built-in Zygisk | ${{ needs.build-kazezygisk.result }} |"
+            echo "| ksud (arm64/armv7/x86_64/riscv64) | ${{ needs.build-ksud.result }} |"
+            echo "| Manager APKs (Gradle) | ${{ needs.build-manager.result }} |"
+            echo "| Repack & Sign Final APKs | ${{ needs.repack-manager.result }} |"
+            echo ""
+            echo "**Release Cert Size:** \`${{ needs.prepare.outputs.release_size || 'not-set' }}\`"
+            echo "**Release Cert SHA-256:** \`${{ needs.prepare.outputs.release_hash || 'not-set' }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
