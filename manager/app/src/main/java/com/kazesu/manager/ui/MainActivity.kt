@@ -117,7 +117,11 @@ import com.kazesu.manager.ui.screen.darknight.DarkNightThemeStudioScreen
 import com.kazesu.manager.ui.screen.darknight.DarkNightToolboxScreen
 import com.kazesu.manager.ui.theme.DarkNightAuraBackdrop
 import com.kazesu.manager.ui.theme.DarkNightOnboardingOverlay
+import androidx.compose.ui.graphics.Brush
+import com.kazesu.manager.ui.theme.DarkNightGlassToastHost
+import com.kazesu.manager.ui.theme.DarkNightScreenBackground
 import com.kazesu.manager.ui.theme.DarkNightThemeStore
+import com.kazesu.manager.ui.theme.LocalBottomBarPadding
 import com.kazesu.manager.ui.screen.tune.TuneScreen
 import com.kazesu.manager.ui.screen.executemoduleaction.ExecuteModuleActionScreen
 import com.kazesu.manager.ui.screen.flash.FlashScreen
@@ -240,7 +244,7 @@ class MainActivity : ComponentActivity() {
 
             LaunchedEffect(darkMode) {
                 window.setBackgroundDrawable(
-                    getColor(if (darkMode) android.R.color.background_dark else android.R.color.background_light).toDrawable()
+                    android.graphics.drawable.ColorDrawable(0xFF07090F.toInt())
                 )
             }
 
@@ -348,47 +352,47 @@ class MainActivity : ComponentActivity() {
                                 }
                             }) {
                             entry<Route.Main>(swipeDismiss = swipeDismiss) { mainScreenEntry() }
-                            entry<Route.About>(swipeDismiss = swipeDismiss) { AboutScreen() }
-                            entry<Route.Sulog>(swipeDismiss = swipeDismiss) { SulogScreen() }
-                            entry<Route.ColorPalette>(swipeDismiss = swipeDismiss) { key -> ColorPaletteScreen(key.section, key.importUri) }
+                            entry<Route.About>(swipeDismiss = swipeDismiss) { DarkNightScreenBackground { AboutScreen() } }
+                            entry<Route.Sulog>(swipeDismiss = swipeDismiss) { DarkNightScreenBackground { SulogScreen() } }
+                            entry<Route.ColorPalette>(swipeDismiss = swipeDismiss) { key -> DarkNightScreenBackground { ColorPaletteScreen(key.section, key.importUri) } }
                             entry<Route.AppearanceOverlay>(swipeDismiss = swipeDismiss) {
-                                AppearanceOverlayScreen(onBack = { navigator.pop() })
+                                DarkNightScreenBackground { AppearanceOverlayScreen(onBack = { navigator.pop() }) }
                             }
-                            entry<Route.CustomTexts>(swipeDismiss = swipeDismiss) { CustomTextScreen() }
+                            entry<Route.CustomTexts>(swipeDismiss = swipeDismiss) { DarkNightScreenBackground { CustomTextScreen() } }
                             entry<Route.ThemeStore>(swipeDismiss = swipeDismiss) { key ->
                                 MaterialExpressivePalette {
-                                    ThemeStoreScreen(initialThemeId = key.themeId, initialSourceBaseUrl = key.sourceBaseUrl)
+                                    DarkNightScreenBackground { ThemeStoreScreen(initialThemeId = key.themeId, initialSourceBaseUrl = key.sourceBaseUrl) }
                                 }
                             }
                             entry<Route.ThemeStoreAdaptiveUpload>(swipeDismiss = swipeDismiss) {
                                 MaterialExpressivePalette {
-                                    ThemeStoreScreen(startAdaptiveUpload = true)
+                                    DarkNightScreenBackground { ThemeStoreScreen(startAdaptiveUpload = true) }
                                 }
                             }
                             entry<Route.ThemeStoreCurrentUpload>(swipeDismiss = swipeDismiss) {
                                 MaterialExpressivePalette {
-                                    ThemeStoreScreen(startCurrentUpload = true)
+                                    DarkNightScreenBackground { ThemeStoreScreen(startCurrentUpload = true) }
                                 }
                             }
                             entry<Route.ThemeStoreSources>(swipeDismiss = swipeDismiss) {
-                                MaterialExpressivePalette { ThemeStoreSourcesScreen() }
+                                DarkNightScreenBackground { MaterialExpressivePalette { ThemeStoreSourcesScreen() } }
                             }
                             entry<Route.ThemeAccount>(swipeDismiss = swipeDismiss) {
-                                MaterialExpressivePalette { AccountScreen() }
+                                DarkNightScreenBackground { MaterialExpressivePalette { AccountScreen() } }
                             }
                             entry<Route.AdaptiveThemeBuilder>(swipeDismiss = swipeDismiss) {
-                                MaterialExpressivePalette { AdaptiveThemeBuilderScreen() }
+                                DarkNightScreenBackground { MaterialExpressivePalette { AdaptiveThemeBuilderScreen() } }
                             }
-                            entry<Route.AppIcon>(swipeDismiss = swipeDismiss) { AppIconScreen() }
+                            entry<Route.AppIcon>(swipeDismiss = swipeDismiss) { DarkNightScreenBackground { AppIconScreen() } }
                             entry<Route.BackgroundCrop>(swipeDismiss = NavSwipeDirection.None) { key ->
                                 BackgroundCropScreen(key.sourcePath)
                             }
-                            entry<Route.AppProfileTemplate>(swipeDismiss = swipeDismiss) { AppProfileTemplateScreen() }
-                            entry<Route.TemplateEditor>(swipeDismiss = swipeDismiss) { key -> TemplateEditorScreen(key.template, key.readOnly) }
-                            entry<Route.AppProfile>(swipeDismiss = swipeDismiss) { key -> AppProfileScreen(key.uid) }
-                            entry<Route.ModuleRepo>(swipeDismiss = swipeDismiss) { ModuleRepoScreen() }
-                            entry<Route.ModuleRepoDetail>(swipeDismiss = swipeDismiss) { key -> ModuleRepoDetailScreen(key.module) }
-                            entry<Route.Install>(swipeDismiss = swipeDismiss) { key -> InstallScreen(preselectedKernelUri = key.preselectedKernelUri) }
+                            entry<Route.AppProfileTemplate>(swipeDismiss = swipeDismiss) { DarkNightScreenBackground { AppProfileTemplateScreen() } }
+                            entry<Route.TemplateEditor>(swipeDismiss = swipeDismiss) { key -> DarkNightScreenBackground { TemplateEditorScreen(key.template, key.readOnly) } }
+                            entry<Route.AppProfile>(swipeDismiss = swipeDismiss) { key -> DarkNightScreenBackground { AppProfileScreen(key.uid) } }
+                            entry<Route.ModuleRepo>(swipeDismiss = swipeDismiss) { DarkNightScreenBackground { ModuleRepoScreen() } }
+                            entry<Route.ModuleRepoDetail>(swipeDismiss = swipeDismiss) { key -> DarkNightScreenBackground { ModuleRepoDetailScreen(key.module) } }
+                            entry<Route.Install>(swipeDismiss = swipeDismiss) { key -> DarkNightScreenBackground { InstallScreen(preselectedKernelUri = key.preselectedKernelUri) } }
                             entry<Route.Flash>(swipeDismiss = if (flashBackEnabled) swipeDismiss else NavSwipeDirection.None) { key ->
                                 FlashScreen(
                                     key.flashIt,
@@ -423,19 +427,19 @@ class MainActivity : ComponentActivity() {
                                         key.kpmUndoPatch
                                     )
                                 }
-                                entry<Route.Kpm>(swipeDismiss = swipeDismiss)  { KpmScreen() }
-                                entry<Route.SuSFS>(swipeDismiss = swipeDismiss)  { key -> SuSFSScreen(key.tab) }
-                                entry<Route.Tool>(swipeDismiss = swipeDismiss)  { ToolsScreen() }
-                                entry<Route.UmountManager>(swipeDismiss = swipeDismiss)  { UmountManagerScreen() }
-                                entry<Route.KernelModules>(swipeDismiss = swipeDismiss)  { KernelModulesScreen() }
-                                entry<Route.DynamicManagers>(swipeDismiss = swipeDismiss) { DynamicManagersScreen() }
-                                entry<Route.Extensions>(swipeDismiss = swipeDismiss) { ExtensionsScreen() }
-                                entry<Route.Tune>(swipeDismiss = swipeDismiss) { TuneScreen() }
+                                entry<Route.Kpm>(swipeDismiss = swipeDismiss)  { DarkNightScreenBackground { KpmScreen() } }
+                                entry<Route.SuSFS>(swipeDismiss = swipeDismiss)  { key -> DarkNightScreenBackground { SuSFSScreen(key.tab) } }
+                                entry<Route.Tool>(swipeDismiss = swipeDismiss)  { DarkNightScreenBackground { ToolsScreen() } }
+                                entry<Route.UmountManager>(swipeDismiss = swipeDismiss)  { DarkNightScreenBackground { UmountManagerScreen() } }
+                                entry<Route.KernelModules>(swipeDismiss = swipeDismiss)  { DarkNightScreenBackground { KernelModulesScreen() } }
+                                entry<Route.DynamicManagers>(swipeDismiss = swipeDismiss) { DarkNightScreenBackground { DynamicManagersScreen() } }
+                                entry<Route.Extensions>(swipeDismiss = swipeDismiss) { DarkNightScreenBackground { ExtensionsScreen() } }
+                                entry<Route.Tune>(swipeDismiss = swipeDismiss) { DarkNightScreenBackground { TuneScreen() } }
                                 entry<Route.DarkNightToolbox>(swipeDismiss = swipeDismiss) { DarkNightToolboxScreen() }
                                 entry<Route.DarkNightThemeStudio>(swipeDismiss = swipeDismiss) { DarkNightThemeStudioScreen() }
-                                entry<Route.CpuSpoof>(swipeDismiss = swipeDismiss) { CpuSpoofScreen() }
-                                entry<Route.VersionSpoof>(swipeDismiss = swipeDismiss) { VersionSpoofScreen() }
-                                entry<Route.BuiltinZygisk>(swipeDismiss = swipeDismiss) { BuiltinZygiskScreen() }
+                                entry<Route.CpuSpoof>(swipeDismiss = swipeDismiss) { DarkNightScreenBackground { CpuSpoofScreen() } }
+                                entry<Route.VersionSpoof>(swipeDismiss = swipeDismiss) { DarkNightScreenBackground { VersionSpoofScreen() } }
+                                entry<Route.BuiltinZygisk>(swipeDismiss = swipeDismiss) { DarkNightScreenBackground { BuiltinZygiskScreen() } }
                                 entry<Route.AiAssistant>(swipeDismiss = swipeDismiss) {
                                     if (!AiFeatureBridge.isAvailable) {
                                         LaunchedEffect(Unit) { navigator.pop() }
@@ -561,6 +565,8 @@ class MainActivity : ComponentActivity() {
                                 containerColor = if (hasCustomBackground || showDarkNightAura) Color.Transparent else MiuixTheme.colorScheme.surface
                             ) { navDisplay() }
                         }
+
+                        DarkNightGlassToastHost(palette = darkNightTheme.palette)
 
                         DarkNightOnboardingOverlay(
                             visible = !darkNightTheme.onboardingCompleted,
@@ -801,7 +807,17 @@ fun MainScreen(
         } else {
             val bottomBar = @Composable {
                 Box(
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(
+                                    Color.Transparent,
+                                    Color(0xD907090F),
+                                    Color(0xF207090F),
+                                )
+                            )
+                        )
                 ) {
                     BottomBar(
                         blurBackdrop = blurBackdrop,
@@ -817,14 +833,20 @@ fun MainScreen(
                     bottomBar = bottomBar,
                     containerColor = if (hasCustomBackground) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer
                 ) { innerPadding ->
-                    pagerContent(innerPadding.calculateBottomPadding())
+                    val pad = innerPadding.calculateBottomPadding() + 16.dp
+                    CompositionLocalProvider(LocalBottomBarPadding provides pad) {
+                        pagerContent(pad)
+                    }
                 }
 
                 UiMode.Miuix -> Scaffold(
                     bottomBar = bottomBar,
                     containerColor = if (hasCustomBackground) Color.Transparent else MiuixTheme.colorScheme.surface
                 ) { innerPadding ->
-                    pagerContent(innerPadding.calculateBottomPadding())
+                    val pad = innerPadding.calculateBottomPadding() + 16.dp
+                    CompositionLocalProvider(LocalBottomBarPadding provides pad) {
+                        pagerContent(pad)
+                    }
                 }
             }
         }
