@@ -179,10 +179,11 @@ fun backgroundAwareCardColors(
     contentColor: androidx.compose.ui.graphics.Color = top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme.onSurfaceContainer,
     backgroundAlpha: Float = LocalCardBackgroundAlpha.current,
 ): top.yukonga.miuix.kmp.basic.CardColors {
-    val adjusted = if (LocalBackgroundImagePath.current.isNotEmpty()) {
-        color.copy(alpha = backgroundAlpha)
-    } else {
-        color
+    val path = LocalBackgroundImagePath.current
+    val adjusted = when {
+        path == "darknight://aura" -> androidx.compose.ui.graphics.Color.Transparent
+        path.isNotEmpty() -> color.copy(alpha = backgroundAlpha)
+        else -> color
     }
     return top.yukonga.miuix.kmp.basic.CardDefaults.defaultColors(
         color = adjusted,
@@ -195,10 +196,11 @@ fun backgroundAwareColor(
     color: androidx.compose.ui.graphics.Color,
     backgroundAlpha: Float = LocalCardBackgroundAlpha.current,
 ): androidx.compose.ui.graphics.Color {
-    return if (LocalBackgroundImagePath.current.isNotEmpty()) {
-        color.copy(alpha = backgroundAlpha)
-    } else {
-        color
+    val path = LocalBackgroundImagePath.current
+    return when {
+        path == "darknight://aura" -> androidx.compose.ui.graphics.Color.White.copy(alpha = 0.08f)
+        path.isNotEmpty() -> color.copy(alpha = backgroundAlpha)
+        else -> color
     }
 }
 

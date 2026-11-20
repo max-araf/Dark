@@ -296,7 +296,7 @@ class MainActivity : ComponentActivity() {
                 LocalEnableNavigationBadge provides uiState.enableNavigationBadge,
                 LocalModuleDescriptionMaxLines provides uiState.moduleDescriptionMaxLines,
                 LocalBackgroundImagePath provides (uiState.customBackgroundUri.ifEmpty { if (darkNightTheme.auraEnabled) "darknight://aura" else "" }),
-                LocalAppBackgroundBackdrop provides appBackgroundBackdrop.takeIf { captureAppBackground },
+                LocalAppBackgroundBackdrop provides appBackgroundBackdrop.takeIf { captureAppBackground || (uiState.customBackgroundUri.isEmpty() && darkNightTheme.auraEnabled) },
                 LocalCardBackgroundAlpha provides (if (uiState.customBackgroundUri.isEmpty() && darkNightTheme.auraEnabled) 0.58f else (uiState.cardBackgroundAlphaPercent / 100f)),
                 LocalUiMode provides uiMode,
                 LocalCustomTexts provides uiState.customTexts,
@@ -557,6 +557,7 @@ class MainActivity : ComponentActivity() {
                             DarkNightAuraBackdrop(
                                 palette = darkNightTheme.palette,
                                 animateOnStart = darkNightTheme.startupAnimEnabled,
+                                modifier = Modifier.layerBackdrop(appBackgroundBackdrop),
                             )
                         }
 

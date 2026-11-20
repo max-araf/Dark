@@ -22,7 +22,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import com.kazesu.manager.ui.theme.LocalBackgroundImagePath
 import com.kazesu.manager.ui.theme.backgroundAwareColor
+import com.kazesu.manager.ui.theme.darkNightGlassCardSurface
 
 @Composable
 fun TonalCard(
@@ -39,10 +41,12 @@ fun TonalCard(
     pressHapticEnabled: Boolean = true,
     content: @Composable () -> Unit,
 ) {
+    val isDarkNightGlass = LocalBackgroundImagePath.current == "darknight://aura"
     val colors = CardDefaults.cardColors(
-        containerColor = backgroundAwareColor(containerColor),
+        containerColor = if (isDarkNightGlass) Color.Transparent else backgroundAwareColor(containerColor),
         contentColor = contentColor,
     )
+    val glassModifier = if (isDarkNightGlass) Modifier.darkNightGlassCardSurface(shape = shape) else Modifier
     when {
         onLongClick != null || onClick != null -> {
             val pressed by interactionSource.collectIsPressedAsState()
@@ -68,6 +72,7 @@ fun TonalCard(
             Card(
                 modifier = modifier
                     .scale(scale)
+                    .then(glassModifier)
                     .clip(shape)
                     .combinedClickable(
                         enabled = enabled,
@@ -82,7 +87,7 @@ fun TonalCard(
         }
 
         else -> Card(
-            modifier = modifier,
+            modifier = modifier.then(glassModifier),
             colors = colors,
             shape = shape,
         ) { content() }

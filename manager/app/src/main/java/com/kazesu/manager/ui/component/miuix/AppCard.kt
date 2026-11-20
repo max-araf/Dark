@@ -5,7 +5,10 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
+import androidx.compose.foundation.shape.RoundedCornerShape
+import com.kazesu.manager.ui.theme.LocalBackgroundImagePath
 import com.kazesu.manager.ui.theme.backgroundAwareCardColors
+import com.kazesu.manager.ui.theme.darkNightGlassCardSurface
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardColors
 import top.yukonga.miuix.kmp.basic.CardDefaults
@@ -24,8 +27,10 @@ fun AppCard(
     colors: CardColors = backgroundAwareCardColors(),
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    val isDarkNightGlass = LocalBackgroundImagePath.current == "darknight://aura"
+    val glassMod = if (isDarkNightGlass) Modifier.darkNightGlassCardSurface(RoundedCornerShape(cornerRadius)) else Modifier
     Card(
-        modifier = modifier,
+        modifier = modifier.then(glassMod),
         cornerRadius = cornerRadius,
         insideMargin = insideMargin,
         colors = colors,
@@ -46,8 +51,10 @@ fun AppCard(
     onLongPress: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    val isDarkNightGlass = LocalBackgroundImagePath.current == "darknight://aura"
+    val glassMod = if (isDarkNightGlass) Modifier.darkNightGlassCardSurface(RoundedCornerShape(cornerRadius)) else Modifier
     Card(
-        modifier = modifier,
+        modifier = modifier.then(glassMod),
         cornerRadius = cornerRadius,
         insideMargin = insideMargin,
         colors = colors,

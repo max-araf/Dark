@@ -1,5 +1,4 @@
 package com.kazesu.manager.ui.screen.home
-import com.kazesu.manager.ui.theme.DarkNightLinks
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -895,14 +894,13 @@ private fun previewHomeScreenState(
 private fun DarkNightToolboxCard(
     onClick: () -> Unit,
 ) {
-    ElevatedCard(
+    val palette = DarkNightThemeStore.state.value.palette
+    DarkNightGlassCard(
+        palette = palette,
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 14.dp),
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
@@ -910,16 +908,18 @@ private fun DarkNightToolboxCard(
                 Text(
                     text = "DarkNight Toolbox",
                     style = MaterialTheme.typography.titleMedium,
+                    color = Color.White,
                 )
                 Text(
                     text = "Game Profiles • Bypass Charge • Integrity Hub • Live Logs • Rescue",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = Color.White.copy(alpha = 0.65f),
                 )
             }
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = null,
+                tint = Color.White.copy(alpha = 0.72f),
             )
         }
     }

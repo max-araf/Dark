@@ -49,6 +49,16 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import top.yukonga.miuix.kmp.shader.isRenderEffectSupported
+import top.yukonga.miuix.kmp.blur.textureBlur
+import top.yukonga.miuix.kmp.blur.BlurColors
+import top.yukonga.miuix.kmp.blur.BlendColorEntry
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.foundation.border
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -220,6 +230,18 @@ object DarkNightPalettes {
     fun byId(id: String?): DarkNightPalette = all.firstOrNull { it.id == id } ?: DarkNightAura
 }
 
+enum class DarkNightBlurQuality(val id: String, val label: String, val radius: Float) {
+    HIGH("high", "High (18dp)", 18f),
+    LOW("low", "Low (10dp)", 10f),
+    OFF("off", "Off", 0f);
+
+    companion object {
+        fun byId(id: String?): DarkNightBlurQuality = entries.firstOrNull { it.id == id } ?: HIGH
+    }
+}
+
+fun contrastOn(bg: Color): Color = if (bg.luminance() > 0.45f) Color(0xFF0A0D14) else Color.White
+
 enum class DarkNightNavStyle(val id: String) {
     BOTTOM_BAR("bottom_bar"),
     GLASS_SIDEBAR("glass_sidebar");
@@ -238,6 +260,8 @@ data class DarkNightThemeState(
     val startupAnimEnabled: Boolean = true,
     val onboardingCompleted: Boolean = false,
     val navStyle: DarkNightNavStyle = DarkNightNavStyle.BOTTOM_BAR,
+    val blurQuality: DarkNightBlurQuality = DarkNightBlurQuality.HIGH,
+    val amoledBlack: Boolean = false,
 )
 
 object DarkNightThemeStore {
@@ -247,6 +271,8 @@ object DarkNightThemeStore {
     private const val KEY_STARTUP_ANIM = "startup_anim_enabled"
     private const val KEY_ONBOARDING_DONE = "onboarding_done"
     private const val KEY_NAV_STYLE = "nav_style"
+    private const val KEY_BLUR_QUALITY = "blur_quality"
+    private const val KEY_AMOLED_BLACK = "amoled_black"
 
     private val _state = MutableStateFlow(DarkNightThemeState())
     val state: StateFlow<DarkNightThemeState> = _state.asStateFlow()
@@ -265,6 +291,8 @@ object DarkNightThemeStore {
                 startupAnimEnabled = prefs.getBoolean(KEY_STARTUP_ANIM, true),
                 onboardingCompleted = prefs.getBoolean(KEY_ONBOARDING_DONE, false),
                 navStyle = DarkNightNavStyle.byId(prefs.getString(KEY_NAV_STYLE, DarkNightNavStyle.BOTTOM_BAR.id)),
+                blurQuality = DarkNightBlurQuality.byId(prefs.getString(KEY_BLUR_QUALITY, DarkNightBlurQuality.HIGH.id)),
+                amoledBlack = prefs.getBoolean(KEY_AMOLED_BLACK, false),
             )
             initialized = true
         }
@@ -315,6 +343,24 @@ object DarkNightThemeStore {
         _state.value = _state.value.copy(navStyle = style)
     }
 
+    fun setBlurQuality(context: Context, quality: DarkNightBlurQuality) {
+        init(context)
+        context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putString(KEY_BLUR_QUALITY, quality.id)
+            .apply()
+        _state.value = _state.value.copy(blurQuality = quality)
+    }
+
+    fun setAmoledBlack(context: Context, enabled: Boolean) {
+        init(context)
+        context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putBoolean(KEY_AMOLED_BLACK, enabled)
+            .apply()
+        _state.value = _state.value.copy(amoledBlack = enabled)
+    }
+
     fun activeKeyColorArgb(): Int = _state.value.palette.primaryGlow.toArgb()
 }
 
@@ -341,58 +387,78 @@ fun DarkNightAuraBackdrop(
     }
     val p = progress.value
 
+    val themeState by DarkNightThemeStore.state.collectAsStateWithLifecycle()
+    val amoled = themeState.amoledBlack
+    val baseBg = if (amoled) Color.Black else palette.deepBase
+    val blobMul = if (amoled) 0.70f else 1.0f
+
     Canvas(
         modifier = modifier
             .fillMaxSize()
-            .background(palette.deepBase)
+            .background(baseBg)
     ) {
         val w = size.width
         val h = size.height
 
-        // Primary upper-left / top-center luminous bloom that glides into place and settles static
-        val primaryCenter = Offset(
-            x = w * (0.18f + 0.14f * p),
-            y = h * (0.04f + 0.08f * p),
-        )
+        // 1. Top-left primary glow (~420x330dp, accent @ 0.62)
         drawRect(
             brush = Brush.radialGradient(
                 colors = listOf(
-                    palette.primaryGlow.copy(alpha = 0.78f * p),
-                    palette.primaryGlow.copy(alpha = 0.34f * p),
+                    palette.primaryGlow.copy(alpha = 0.62f * p * blobMul),
+                    palette.primaryGlow.copy(alpha = 0.26f * p * blobMul),
                     Color.Transparent,
                 ),
-                center = primaryCenter,
-                radius = w * (0.85f + 0.25f * p),
+                center = Offset(w * (0.16f + 0.10f * p), h * (0.04f + 0.06f * p)),
+                radius = w * (0.90f + 0.18f * p),
             )
         )
 
-        // Secondary soft highlight mist on upper-right
-        val highlightCenter = Offset(
-            x = w * (0.88f - 0.18f * p),
-            y = h * (0.02f + 0.10f * p),
-        )
+        // 2. Upper-right secondary highlight mist
         drawRect(
             brush = Brush.radialGradient(
                 colors = listOf(
-                    palette.secondaryGlow.copy(alpha = 0.58f * p),
-                    palette.primaryGlow.copy(alpha = 0.20f * p),
+                    palette.secondaryGlow.copy(alpha = 0.42f * p * blobMul),
+                    palette.primaryGlow.copy(alpha = 0.14f * p * blobMul),
                     Color.Transparent,
                 ),
-                center = highlightCenter,
-                radius = w * (0.68f + 0.18f * p),
+                center = Offset(w * (0.88f - 0.12f * p), h * (0.05f + 0.06f * p)),
+                radius = w * 0.65f,
             )
         )
 
-        // Deep obsidian vertical fade to keep lower cards ultra-legible
+        // 3. Right-mid blob (accent @ 0.34, ~300dp) so mid-screen glass cards refract color
         drawRect(
-            brush = Brush.verticalGradient(
+            brush = Brush.radialGradient(
                 colors = listOf(
+                    palette.primaryGlow.copy(alpha = 0.34f * p * blobMul),
                     Color.Transparent,
-                    palette.deepBase.copy(alpha = 0.65f),
-                    palette.deepBase,
                 ),
-                startY = h * 0.28f,
-                endY = h * 0.78f,
+                center = Offset(w * 0.92f, h * 0.46f),
+                radius = w * 0.72f,
+            )
+        )
+
+        // 4. Left-lower blob (lite @ 0.20, ~260x220dp)
+        drawRect(
+            brush = Brush.radialGradient(
+                colors = listOf(
+                    palette.secondaryGlow.copy(alpha = 0.20f * p * blobMul),
+                    Color.Transparent,
+                ),
+                center = Offset(w * 0.12f, h * 0.68f),
+                radius = w * 0.62f,
+            )
+        )
+
+        // 5. Bottom-right blob (accent @ 0.45, ~360x260dp)
+        drawRect(
+            brush = Brush.radialGradient(
+                colors = listOf(
+                    palette.primaryGlow.copy(alpha = 0.45f * p * blobMul),
+                    Color.Transparent,
+                ),
+                center = Offset(w * 0.85f, h * 0.92f),
+                radius = w * 0.82f,
             )
         )
     }
@@ -401,25 +467,121 @@ fun DarkNightAuraBackdrop(
 /**
  * Translucent obsidian glass card with hairline 1dp border matching the Zentra reference UI.
  */
+/**
+ * Global Liquid Frosted Glass modifier (FIX-A1):
+ * - Fill: 135-deg White 13% -> White 4% (zero opaque solid gray)
+ * - Real GPU textureBlur (18dp High / 10dp Low / Off) on API 31+ using shared app backdrop
+ * - Palette-tinted 1dp gradient border: lite 40% -> 7% -> 16% (neutral palette capped at 30%)
+ * - Top 1dp inner specular highlight (White @ 12%)
+ * - Bright palettes auto-add dark 28% scrim for WCAG readability
+ */
+@Composable
+fun Modifier.darkNightGlassCardSurface(
+    shape: Shape = RoundedCornerShape(20.dp),
+    isMonospaceDark: Boolean = false,
+): Modifier {
+    val context = LocalContext.current
+    DarkNightThemeStore.init(context)
+    val themeState by DarkNightThemeStore.state.collectAsStateWithLifecycle()
+    val palette = themeState.palette
+    val backdrop = LocalAppBackgroundBackdrop.current
+    val blurQuality = themeState.blurQuality
+    val hasRealBlur = blurQuality != DarkNightBlurQuality.OFF &&
+        backdrop != null &&
+        isRenderEffectSupported()
+
+    val isNeutral = palette.id == DarkNightPalettes.RoyalCharcoal.id
+    val isBright = palette.primaryGlow.luminance() > 0.45f
+    val borderTint = if (isNeutral) lerp(palette.secondaryGlow, palette.primaryGlow, 0.4f) else palette.secondaryGlow
+    val maxBorderAlpha = if (isNeutral) 0.30f else 0.40f
+    val baseBg = if (themeState.amoledBlack) Color.Black else palette.deepBase
+
+    val blurMod = if (hasRealBlur && backdrop != null) {
+        this.textureBlur(
+            backdrop = backdrop,
+            shape = shape,
+            blurRadius = blurQuality.radius,
+            colors = BlurColors(
+                blendColors = listOf(
+                    BlendColorEntry(color = Color.White.copy(alpha = 0.04f)),
+                ),
+            ),
+        )
+    } else {
+        this
+    }
+
+    return blurMod
+        .clip(shape)
+        .drawBehind {
+            if (isMonospaceDark) {
+                drawRect(Color.Black.copy(alpha = 0.36f))
+            } else if (!hasRealBlur) {
+                // API < 31 or Blur Off translucent fallback
+                drawRect(baseBg.copy(alpha = 0.32f))
+                drawRect(
+                    brush = Brush.linearGradient(
+                        colors = listOf(Color.White.copy(alpha = 0.12f), Color.White.copy(alpha = 0.04f)),
+                        start = Offset(0f, 0f),
+                        end = Offset(size.width, size.height),
+                    )
+                )
+            } else {
+                if (isBright) {
+                    drawRect(Color.Black.copy(alpha = 0.28f))
+                }
+                drawRect(
+                    brush = Brush.linearGradient(
+                        colors = listOf(Color.White.copy(alpha = 0.13f), Color.White.copy(alpha = 0.04f)),
+                        start = Offset(0f, 0f),
+                        end = Offset(size.width, size.height),
+                    )
+                )
+            }
+        }
+        .border(
+            width = 1.dp,
+            brush = Brush.linearGradient(
+                colorStops = arrayOf(
+                    0.00f to borderTint.copy(alpha = maxBorderAlpha),
+                    0.55f to borderTint.copy(alpha = 0.07f),
+                    1.00f to borderTint.copy(alpha = 0.16f),
+                ),
+                start = Offset(0f, 0f),
+                end = Offset(480f, 480f),
+            ),
+            shape = shape,
+        )
+        .drawWithContent {
+            drawContent()
+            drawLine(
+                color = Color.White.copy(alpha = 0.12f),
+                start = Offset(size.width * 0.08f, 1.dp.toPx()),
+                end = Offset(size.width * 0.92f, 1.dp.toPx()),
+                strokeWidth = 1.dp.toPx(),
+            )
+        }
+}
+
 @Composable
 fun DarkNightGlassCard(
     palette: DarkNightPalette,
     modifier: Modifier = Modifier,
+    shape: Shape = RoundedCornerShape(20.dp),
+    isMonospaceDark: Boolean = false,
     onClick: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    val shape = RoundedCornerShape(22.dp)
-    Surface(
+    Box(
         modifier = modifier
             .fillMaxWidth()
-            .clip(shape)
+            .darkNightGlassCardSurface(shape = shape, isMonospaceDark = isMonospaceDark)
             .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier),
-        shape = shape,
-        color = palette.cardSurface,
-        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.11f)),
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
             content = content,
         )
@@ -658,6 +820,63 @@ fun DarkNightGradientPaletteSection(
                 Switch(
                     checked = themeState.startupAnimEnabled,
                     onCheckedChange = { DarkNightThemeStore.setStartupAnimEnabled(context, it) },
+                )
+            }
+
+            // FIX-A7 Blur Quality & AMOLED Pure Black controls
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text("Glass Blur Quality", color = Color.White, fontWeight = FontWeight.Medium, fontSize = 14.sp)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    DarkNightBlurQuality.entries.forEach { quality ->
+                        val activeQ = themeState.blurQuality == quality
+                        val pillShape = RoundedCornerShape(99.dp)
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(pillShape)
+                                .clickable {
+                                    DarkNightThemeStore.setBlurQuality(context, quality)
+                                    DarkNightToastManager.show("Blur: ${quality.label}")
+                                },
+                            shape = pillShape,
+                            color = if (activeQ) active.primaryGlow.copy(alpha = 0.28f) else Color.White.copy(alpha = 0.07f),
+                            border = BorderStroke(
+                                width = 1.dp,
+                                color = if (activeQ) active.secondaryGlow.copy(alpha = 0.55f) else active.secondaryGlow.copy(alpha = 0.16f),
+                            ),
+                        ) {
+                            Box(
+                                modifier = Modifier.padding(vertical = 8.dp, horizontal = 4.dp),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    text = quality.label,
+                                    color = Color.White,
+                                    fontSize = 11.sp,
+                                    fontWeight = if (activeQ) FontWeight.SemiBold else FontWeight.Normal,
+                                    maxLines = 1,
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("AMOLED Pure Black Base", color = Color.White, fontWeight = FontWeight.Medium, fontSize = 14.sp)
+                    Text("Use #000000 backdrop with softer 0.7x aura blobs", color = Color.White.copy(alpha = 0.65f), fontSize = 11.sp)
+                }
+                Switch(
+                    checked = themeState.amoledBlack,
+                    onCheckedChange = { DarkNightThemeStore.setAmoledBlack(context, it) },
                 )
             }
 
