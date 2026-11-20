@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -187,7 +188,7 @@ fun Modifier.darkNightGlass(
 private data class SidebarMenuItem(
     val id: String,
     val labelRes: Int,
-    val icon: ImageVector,
+    val iconRes: Int,
     val badgeCount: Int = 0,
     val onClick: () -> Unit,
 )
@@ -223,19 +224,19 @@ fun DarkNightGlassSidebarOverlay(
     val deviceModel = remember { Build.MODEL.ifBlank { "Android Device" } }
 
     val menuItems = listOf(
-        SidebarMenuItem("home", R.string.home, Icons.Filled.Home) { onSelectPage(0) },
-        SidebarMenuItem("superuser", R.string.superuser, Icons.Filled.Security) { onSelectPage(1) },
-        SidebarMenuItem("module", R.string.module, Icons.Filled.Extension, badgeCount = moduleBadgeCount) { onSelectPage(2) },
-        SidebarMenuItem("darktune", R.string.kernel_tuning, Icons.Filled.Memory) { onOpenDarkTune() },
-        SidebarMenuItem("toolbox", R.string.darknight_toolbox_title, Icons.Filled.DeveloperMode) { onOpenToolbox() },
+        SidebarMenuItem("home", R.string.home, R.drawable.ic_dn_home) { onSelectPage(0) },
+        SidebarMenuItem("superuser", R.string.superuser, R.drawable.ic_dn_superuser) { onSelectPage(1) },
+        SidebarMenuItem("module", R.string.module, R.drawable.ic_dn_module, badgeCount = moduleBadgeCount) { onSelectPage(2) },
+        SidebarMenuItem("darktune", R.string.kernel_tuning, R.drawable.ic_dn_darktune) { onOpenDarkTune() },
+        SidebarMenuItem("toolbox", R.string.darknight_toolbox_title, R.drawable.ic_dn_toolbox) { onOpenToolbox() },
     )
 
     val systemItems = listOf(
-        SidebarMenuItem("theme", R.string.darknight_nav_theme_studio, Icons.Filled.Palette) { onOpenThemeStudio() },
-        SidebarMenuItem("logs", R.string.send_log, Icons.Filled.Description) { onOpenSendLogs() },
-        SidebarMenuItem("settings", R.string.settings, Icons.Filled.Settings) { onSelectPage(3) },
-        SidebarMenuItem("about", R.string.about, Icons.Filled.Info) { onOpenAbout() },
-        SidebarMenuItem("reboot", R.string.darknight_nav_reboot_options, Icons.Filled.RestartAlt) { showRebootDialog = true },
+        SidebarMenuItem("theme", R.string.darknight_nav_theme_studio, R.drawable.ic_dn_theme) { onOpenThemeStudio() },
+        SidebarMenuItem("logs", R.string.send_log, R.drawable.ic_dn_logs) { onOpenSendLogs() },
+        SidebarMenuItem("settings", R.string.settings, R.drawable.ic_dn_settings) { onSelectPage(3) },
+        SidebarMenuItem("about", R.string.about, R.drawable.ic_dn_about) { onOpenAbout() },
+        SidebarMenuItem("reboot", R.string.darknight_nav_reboot_options, R.drawable.ic_dn_reboot) { showRebootDialog = true },
     )
 
     val selectedId = when (selectedPage) {
@@ -304,16 +305,16 @@ fun DarkNightGlassSidebarOverlay(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(vertical = 10.dp),
+                        .padding(top = 14.dp, bottom = 10.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    // App Logo (36dp) -> tap expands drawer
+                    // App Logo (36dp fixed square, radius 11dp) -> tap expands drawer
                     Image(
                         painter = painterResource(R.drawable.ic_launcher_darknight_full),
                         contentDescription = stringResource(R.string.app_name),
                         modifier = Modifier
                             .size(36.dp)
-                            .clip(RoundedCornerShape(12.dp))
+                            .clip(RoundedCornerShape(11.dp))
                             .clickable { expanded = true },
                         contentScale = ContentScale.Crop,
                     )
@@ -528,7 +529,7 @@ fun DarkNightGlassSidebarOverlay(
                                 )
                             }
                             Icon(
-                                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                painter = painterResource(R.drawable.ic_dn_chevron),
                                 contentDescription = null,
                                 tint = Color.White.copy(alpha = 0.65f),
                                 modifier = Modifier.size(18.dp),
@@ -620,29 +621,33 @@ private fun RailIconButton(
                 .clickable(onClick = onClick),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(
-                imageVector = item.icon,
-                contentDescription = stringResource(item.labelRes),
-                tint = if (selected) Color.White else Color.White.copy(alpha = 0.78f),
-                modifier = Modifier.size(22.dp),
-            )
-            if (item.badgeCount > 0) {
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .offset(x = (-4).dp, y = 4.dp)
-                        .size(16.dp)
-                        .clip(CircleShape)
-                        .background(palette.primaryGlow)
-                        .border(1.5.dp, Color.White, CircleShape),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = if (item.badgeCount > 99) "99" else item.badgeCount.toString(),
-                        color = Color.White,
-                        fontSize = 9.sp,
-                        fontWeight = FontWeight.Bold,
-                    )
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    painter = painterResource(item.iconRes),
+                    contentDescription = stringResource(item.labelRes),
+                    tint = if (selected) Color.White else Color.White.copy(alpha = 0.68f),
+                    modifier = Modifier.size(22.dp),
+                )
+                if (item.badgeCount > 0) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .offset(x = 6.dp, y = (-6).dp)
+                            .defaultMinSize(minWidth = 16.dp, minHeight = 16.dp)
+                            .clip(CircleShape)
+                            .background(palette.primaryGlow)
+                            .border(1.5.dp, Color(0xFF07090F), CircleShape)
+                            .padding(horizontal = 3.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = if (item.badgeCount > 99) "99+" else item.badgeCount.toString(),
+                            color = Color.White,
+                            fontSize = 9.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                        )
+                    }
                 }
             }
         }
@@ -697,9 +702,9 @@ private fun DrawerMenuRow(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
-                imageVector = item.icon,
+                painter = painterResource(item.iconRes),
                 contentDescription = null,
-                tint = if (selected) Color.White else Color.White.copy(alpha = 0.80f),
+                tint = if (selected) Color.White else Color.White.copy(alpha = 0.68f),
                 modifier = Modifier.size(22.dp),
             )
             Spacer(modifier = Modifier.width(14.dp))
@@ -714,7 +719,7 @@ private fun DrawerMenuRow(
             )
             if (selected) {
                 Icon(
-                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    painter = painterResource(R.drawable.ic_dn_chevron),
                     contentDescription = null,
                     tint = Color.White.copy(alpha = 0.85f),
                     modifier = Modifier.size(18.dp),
@@ -722,10 +727,11 @@ private fun DrawerMenuRow(
             } else if (item.badgeCount > 0) {
                 Box(
                     modifier = Modifier
-                        .size(22.dp)
+                        .defaultMinSize(minWidth = 22.dp, minHeight = 22.dp)
                         .clip(CircleShape)
                         .background(palette.primaryGlow)
-                        .border(1.dp, Color.White.copy(alpha = 0.6f), CircleShape),
+                        .border(1.5.dp, Color(0xFF07090F), CircleShape)
+                        .padding(horizontal = 5.dp),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(

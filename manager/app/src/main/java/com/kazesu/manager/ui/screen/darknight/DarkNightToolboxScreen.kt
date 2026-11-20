@@ -53,7 +53,9 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import com.kazesu.manager.R
 import androidx.compose.ui.unit.sp
 import com.kazesu.manager.ui.navigation3.LocalNavigator
 import com.kazesu.manager.ui.navigation3.Route
@@ -135,7 +137,7 @@ fun DarkNightToolboxScreen() {
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 IconButton(onClick = { navigator.pop() }) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
+                    Icon(painter = painterResource(R.drawable.ic_dn_back), contentDescription = "Back", tint = Color.White)
                 }
                 Column(modifier = Modifier.weight(1f)) {
                     Text("DarkNight Toolbox", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 19.sp)

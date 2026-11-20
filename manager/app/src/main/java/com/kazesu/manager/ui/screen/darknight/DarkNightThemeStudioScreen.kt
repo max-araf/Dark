@@ -39,7 +39,9 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import com.kazesu.manager.R
 import androidx.compose.ui.unit.sp
 import com.kazesu.manager.ui.navigation3.LocalNavigator
 import com.kazesu.manager.ui.navigation3.Route
@@ -78,7 +80,7 @@ fun DarkNightThemeStudioScreen() {
             ) {
                 IconButton(onClick = { navigator.pop() }) {
                     Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        painter = painterResource(R.drawable.ic_dn_back),
                         contentDescription = "Back",
                         tint = Color.White,
                     )
