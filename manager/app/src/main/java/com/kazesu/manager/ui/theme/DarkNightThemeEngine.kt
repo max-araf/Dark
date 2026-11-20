@@ -55,7 +55,10 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -217,11 +220,24 @@ object DarkNightPalettes {
     fun byId(id: String?): DarkNightPalette = all.firstOrNull { it.id == id } ?: DarkNightAura
 }
 
+enum class DarkNightNavStyle(val id: String) {
+    BOTTOM_BAR("bottom_bar"),
+    GLASS_SIDEBAR("glass_sidebar");
+
+    companion object {
+        fun byId(id: String?): DarkNightNavStyle = entries.firstOrNull { it.id == id } ?: BOTTOM_BAR
+    }
+}
+
+/** Shared left clearance when Glass Sidebar Rail is active (80dp). */
+val LocalNavRailPadding = staticCompositionLocalOf<Dp> { 0.dp }
+
 data class DarkNightThemeState(
     val palette: DarkNightPalette = DarkNightPalettes.DarkNightAura,
     val auraEnabled: Boolean = true,
     val startupAnimEnabled: Boolean = true,
     val onboardingCompleted: Boolean = false,
+    val navStyle: DarkNightNavStyle = DarkNightNavStyle.BOTTOM_BAR,
 )
 
 object DarkNightThemeStore {
@@ -230,6 +246,7 @@ object DarkNightThemeStore {
     private const val KEY_AURA = "aura_enabled"
     private const val KEY_STARTUP_ANIM = "startup_anim_enabled"
     private const val KEY_ONBOARDING_DONE = "onboarding_done"
+    private const val KEY_NAV_STYLE = "nav_style"
 
     private val _state = MutableStateFlow(DarkNightThemeState())
     val state: StateFlow<DarkNightThemeState> = _state.asStateFlow()
@@ -247,6 +264,7 @@ object DarkNightThemeStore {
                 auraEnabled = prefs.getBoolean(KEY_AURA, true),
                 startupAnimEnabled = prefs.getBoolean(KEY_STARTUP_ANIM, true),
                 onboardingCompleted = prefs.getBoolean(KEY_ONBOARDING_DONE, false),
+                navStyle = DarkNightNavStyle.byId(prefs.getString(KEY_NAV_STYLE, DarkNightNavStyle.BOTTOM_BAR.id)),
             )
             initialized = true
         }
@@ -286,6 +304,15 @@ object DarkNightThemeStore {
             .putBoolean(KEY_ONBOARDING_DONE, completed)
             .apply()
         _state.value = _state.value.copy(onboardingCompleted = completed)
+    }
+
+    fun setNavStyle(context: Context, style: DarkNightNavStyle) {
+        init(context)
+        context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putString(KEY_NAV_STYLE, style.id)
+            .apply()
+        _state.value = _state.value.copy(navStyle = style)
     }
 
     fun activeKeyColorArgb(): Int = _state.value.palette.primaryGlow.toArgb()
@@ -634,6 +661,51 @@ fun DarkNightGradientPaletteSection(
                 )
             }
 
+            // Phase 1 Navigation Style selector (Bottom bar Classic vs Glass Sidebar)
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text("Navigation Style", color = Color.White, fontWeight = FontWeight.Medium, fontSize = 14.sp)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    listOf(
+                        DarkNightNavStyle.BOTTOM_BAR to "Bottom bar (Classic)",
+                        DarkNightNavStyle.GLASS_SIDEBAR to "Glass Sidebar",
+                    ).forEach { (style, label) ->
+                        val activeStyle = themeState.navStyle == style
+                        val pillShape = RoundedCornerShape(14.dp)
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(pillShape)
+                                .clickable {
+                                    DarkNightThemeStore.setNavStyle(context, style)
+                                    DarkNightToastManager.show("Navigation: $label")
+                                },
+                            shape = pillShape,
+                            color = if (activeStyle) active.primaryGlow.copy(alpha = 0.28f) else Color(0x880D111A),
+                            border = BorderStroke(
+                                width = if (activeStyle) 1.5.dp else 1.dp,
+                                color = if (activeStyle) active.primaryGlow else Color.White.copy(alpha = 0.16f),
+                            ),
+                        ) {
+                            Box(
+                                modifier = Modifier.padding(vertical = 10.dp, horizontal = 8.dp),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    text = label,
+                                    color = Color.White,
+                                    fontSize = 12.sp,
+                                    fontWeight = if (activeStyle) FontWeight.SemiBold else FontWeight.Normal,
+                                    maxLines = 1,
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
             DarkNightPalettes.all.chunked(2).forEach { pair ->
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -648,7 +720,7 @@ fun DarkNightGradientPaletteSection(
                                 .clip(shape)
                                 .clickable {
                                     DarkNightThemeStore.selectPalette(context, pal)
-                                    Toast.makeText(context, "Applied ${pal.name}", Toast.LENGTH_SHORT).show()
+                                    DarkNightToastManager.show("Applied ${pal.name}")
                                 },
                             shape = shape,
                             color = Color(0xBB0D111A),
@@ -728,12 +800,117 @@ fun DarkNightGradientPaletteSection(
             OutlinedButton(
                 onClick = {
                     DarkNightThemeStore.setOnboardingCompleted(context, false)
-                    Toast.makeText(context, "Startup intro will show on next launch", Toast.LENGTH_SHORT).show()
+                    DarkNightToastManager.show("Startup intro will show on next launch")
                 },
                 modifier = Modifier.fillMaxWidth(),
                 border = BorderStroke(1.dp, Color.White.copy(alpha = 0.22f)),
             ) {
                 Text("Replay Startup Intro Screen", color = Color.White)
+            }
+        }
+    }
+}
+
+
+/** Shared bottom bar clearance (bottom bar height + system navigation bar + margin). */
+val LocalBottomBarPadding = staticCompositionLocalOf<Dp> { 0.dp }
+
+/**
+ * Opaque screen wrapper for detail destinations so previous screens in the NavDisplay
+ * back stack never ghost/bleed behind Theme, Theme Store, Toolbox, DarkTune, etc.
+ */
+@Composable
+fun DarkNightScreenBackground(
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    val context = LocalContext.current
+    DarkNightThemeStore.init(context)
+    val state by DarkNightThemeStore.state.collectAsStateWithLifecycle()
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(state.palette.deepBase)
+    ) {
+        if (state.auraEnabled) {
+            DarkNightAuraBackdrop(
+                palette = state.palette,
+                animateOnStart = false,
+            )
+        }
+        content()
+    }
+}
+
+/**
+ * Single-instance Glass Toast manager: new messages immediately replace the old one (no stacking).
+ */
+data class DarkNightToastMessage(val id: Long, val text: String)
+
+object DarkNightToastManager {
+    private val _current = MutableStateFlow<DarkNightToastMessage?>(null)
+    val current: StateFlow<DarkNightToastMessage?> = _current.asStateFlow()
+
+    fun show(text: String) {
+        _current.value = DarkNightToastMessage(System.nanoTime(), text)
+    }
+
+    fun dismiss(id: Long) {
+        if (_current.value?.id == id) {
+            _current.value = null
+        }
+    }
+}
+
+@Composable
+fun DarkNightGlassToastHost(
+    palette: DarkNightPalette,
+    modifier: Modifier = Modifier,
+) {
+    val toast by DarkNightToastManager.current.collectAsStateWithLifecycle()
+    LaunchedEffect(toast?.id) {
+        val id = toast?.id ?: return@LaunchedEffect
+        delay(1800)
+        DarkNightToastManager.dismiss(id)
+    }
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .navigationBarsPadding()
+            .padding(bottom = 92.dp, start = 24.dp, end = 24.dp),
+        contentAlignment = Alignment.BottomCenter,
+    ) {
+        AnimatedVisibility(
+            visible = toast != null,
+            enter = fadeIn(tween(180)),
+            exit = fadeOut(tween(220)),
+        ) {
+            toast?.let { msg ->
+                Surface(
+                    shape = RoundedCornerShape(999.dp),
+                    color = Color(0xE80A0E17),
+                    border = BorderStroke(1.dp, palette.primaryGlow.copy(alpha = 0.65f)),
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 18.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .clip(CircleShape)
+                                .background(palette.primaryGlow)
+                        )
+                        Text(
+                            text = msg.text,
+                            color = Color.White,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium,
+                        )
+                    }
+                }
             }
         }
     }

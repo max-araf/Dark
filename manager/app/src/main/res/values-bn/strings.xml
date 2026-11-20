@@ -77,4 +77,13 @@
     <string name="profile_flags_desc_no_new_privs">এই রুট প্রোফাইলের প্রেক্ষাপট থেকে KazeSU-এর মাধ্যমে আরও বিশেষাধিকার বৃদ্ধি রোধ করে।</string>
     <string name="install_force_backup">স্টক ইমেজ হিসেবে ব্যাকআপ করুন</string>
     <string name="install_force_backup_summary">অনুগ্রহ করে নিশ্চিত করুন যে আপনি যে boot ইমেজটি বেছে নিয়েছেন সেটি স্টক ইমেজ</string>
+    <string name="home_limited_mode">লিমিটেড মোড</string>
+    <string name="home_limited_mode_summary">রুট পাওয়া গেছে, তবে DarkNightSu কার্নেল ফিচার অনুপলব্ধ।</string>
+    <string name="home_how_to_integrate_kernel">কার্নেল ইন্টিগ্রেশন গাইড</string>
+    <string name="darknight_subtitle">কার্নেল-ভিত্তিক রুট সল্যুশন</string>
+    <string name="darknight_toolbox_title">ডার্কনাইট টুলবক্স</string>
+    <string name="darknight_nav_section_menu">মেনু</string>
+    <string name="darknight_nav_section_system">সিস্টেম</string>
+    <string name="darknight_nav_theme_studio">থিম স্টুডিও</string>
+    <string name="darknight_nav_reboot_options">রিবুট অপশন</string>
 </resources>

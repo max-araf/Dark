@@ -186,7 +186,7 @@ fun HomePagerMaterial(
             SupportLinks(onOpenUrl = actions.onOpenUrl)
             Spacer(
                 Modifier.height(
-                    bottomInnerPadding + if (!Natives.isFullFeatured())
+                    bottomInnerPadding + 24.dp + if (!Natives.isFullFeatured())
                         WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() else 0.dp
                 )
             )
@@ -416,8 +416,9 @@ private fun InactiveStatusCard(
     notInstalled: Boolean,
     onClick: () -> Unit,
 ) {
-    val outlineColor = MaterialTheme.colorScheme.outline
-    val accentColor = MaterialTheme.colorScheme.error
+    val isLimitedMode = state.isRootAvailable && state.ksuVersion == null
+    val outlineColor = if (isLimitedMode) Color(0xFFF59E0B) else MaterialTheme.colorScheme.outline
+    val accentColor = if (isLimitedMode) Color(0xFFF59E0B) else MaterialTheme.colorScheme.error
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -444,21 +445,36 @@ private fun InactiveStatusCard(
                     modifier = Modifier.size(18.dp),
                 )
                 Text(
-                    text = if (notInstalled) {
-                        customText(CustomTextKey.HOME_STATUS_INSTALL_HINT)
-                    } else {
-                        stringResource(R.string.home_unsupported_reason)
+                    text = when {
+                        isLimitedMode -> stringResource(R.string.home_limited_mode_summary)
+                        notInstalled -> customText(CustomTextKey.HOME_STATUS_INSTALL_HINT)
+                        else -> stringResource(R.string.home_unsupported_reason)
                     },
                     style = MaterialTheme.typography.bodyMedium,
                     color = accentColor,
                 )
             }
             Text(
-                text = stringResource(if (notInstalled) R.string.home_not_installed else R.string.home_unsupported),
+                text = stringResource(
+                    when {
+                        isLimitedMode -> R.string.home_limited_mode
+                        notInstalled -> R.string.home_not_installed
+                        else -> R.string.home_unsupported
+                    }
+                ),
                 style = MaterialTheme.typography.displaySmall,
                 fontWeight = FontWeight.Black,
             )
-            if (notInstalled) {
+            if (isLimitedMode) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = { actions.onOpenUrl(DarkNightLinks.KERNEL_INTEGRATION_GUIDE_URL) }) {
+                        Text(stringResource(R.string.home_how_to_integrate_kernel))
+                    }
+                    OutlinedButton(onClick = actions.onInstallClick) {
+                        Text(customText(CustomTextKey.HOME_BTN_INSTALL))
+                    }
+                }
+            } else if (notInstalled) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(onClick = actions.onInstallClick) {
                         Text(customText(CustomTextKey.HOME_BTN_INSTALL))
@@ -615,16 +631,18 @@ private fun SupportLinks(
     val learnMoreUrl = stringResource(R.string.home_learn_kernelsu_url)
 
     SegmentedColumn(modifier = modifier.fillMaxWidth()) {
-        item {
-            SegmentedListItem(
-                onClick = { onOpenUrl("https://patreon.com/weishu") },
+        if (DarkNightLinks.SHOW_SUPPORT_CARD && DarkNightLinks.SUPPORT_URL.isNotBlank()) {
+            item {
+                SegmentedListItem(
+                    onClick = { onOpenUrl(DarkNightLinks.SUPPORT_URL) },
                 headlineContent = { Text(stringResource(R.string.home_support_title)) },
                 supportingContent = { Text(stringResource(R.string.home_support_content)) },
                 leadingContent = {
                     IconTile(Icons.Filled.VolunteerActivism, stringResource(R.string.home_support_title))
                 },
                 trailingContent = { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null) },
-            )
+                )
+            }
         }
         item {
             SegmentedListItem(

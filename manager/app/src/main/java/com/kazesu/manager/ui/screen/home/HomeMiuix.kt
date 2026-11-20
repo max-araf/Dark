@@ -117,11 +117,21 @@ fun HomePagerMiuix(
     AppScaffold(
         containerColor = if (hasCustomBackground) Color.Transparent else colorScheme.surface,
         topBar = {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(Color(0xE007090F), Color(0xB807090F), Color.Transparent)
+                        )
+                    )
+            ) {
             TopBar(
                 scrollBehavior = scrollBehavior,
                 backdrop = backdrop,
                 onOpenThemeStore = actions.onOpenThemeStore,
             )
+            }
         },
         popupHost = { },
         contentWindowInsets = WindowInsets.systemBars.add(WindowInsets.displayCutout).only(WindowInsetsSides.Horizontal)
@@ -239,7 +249,7 @@ fun HomePagerMiuix(
                         )
                         Spacer(
                             Modifier.height(
-                                bottomInnerPadding + if (!Natives.isFullFeatured())
+                                bottomInnerPadding + 24.dp + if (!Natives.isFullFeatured())
                                     WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() else 0.dp
                             )
                         )
@@ -498,6 +508,8 @@ private fun InactiveStatusCard(
     notInstalled: Boolean,
     onClick: () -> Unit,
 ) {
+    val isLimitedMode = state.isRootAvailable && state.ksuVersion == null
+    val statusAccent = if (isLimitedMode) Color(0xFFF59E0B) else colorScheme.error
     AppCard(
         modifier = Modifier.fillMaxWidth(),
         colors = backgroundAwareCardColors(),
@@ -519,26 +531,44 @@ private fun InactiveStatusCard(
                 Icon(
                     imageVector = Icons.Rounded.ErrorOutline,
                     contentDescription = null,
-                    tint = colorScheme.error,
+                    tint = statusAccent,
                     modifier = Modifier.size(18.dp),
                 )
                 Text(
-                    text = if (notInstalled) {
-                        customText(CustomTextKey.HOME_STATUS_INSTALL_HINT)
-                    } else {
-                        stringResource(R.string.home_unsupported_reason)
+                    text = when {
+                        isLimitedMode -> stringResource(R.string.home_limited_mode_summary)
+                        notInstalled -> customText(CustomTextKey.HOME_STATUS_INSTALL_HINT)
+                        else -> stringResource(R.string.home_unsupported_reason)
                     },
                     fontSize = 14.sp,
-                    color = colorScheme.error,
+                    color = statusAccent,
                 )
             }
             Text(
-                text = stringResource(if (notInstalled) R.string.home_not_installed else R.string.home_unsupported),
+                text = stringResource(
+                    when {
+                        isLimitedMode -> R.string.home_limited_mode
+                        notInstalled -> R.string.home_not_installed
+                        else -> R.string.home_unsupported
+                    }
+                ),
                 modifier = Modifier.padding(vertical = 12.dp),
                 fontSize = 36.sp,
                 fontWeight = FontWeight.Bold,
             )
-            if (notInstalled) {
+            if (isLimitedMode) {
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    TextButton(
+                        text = stringResource(R.string.home_how_to_integrate_kernel),
+                        onClick = { actions.onOpenUrl(DarkNightLinks.KERNEL_INTEGRATION_GUIDE_URL) },
+                        colors = ButtonDefaults.textButtonColorsPrimary()
+                    )
+                    TextButton(
+                        text = customText(CustomTextKey.HOME_BTN_INSTALL),
+                        onClick = actions.onInstallClick,
+                    )
+                }
+            } else if (notInstalled) {
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     TextButton(
                         text = customText(CustomTextKey.HOME_BTN_INSTALL),
@@ -621,19 +651,21 @@ private fun SupportLinks(
         modifier = modifier,
         colors = backgroundAwareCardColors(),
     ) {
-        ArrowPreference(
-            title = stringResource(R.string.home_support_title),
-            summary = stringResource(R.string.home_support_content),
-            startAction = {
-                Icon(
-                    imageVector = Icons.Filled.VolunteerActivism,
-                    contentDescription = stringResource(R.string.home_support_title),
-                    modifier = Modifier.padding(end = 6.dp),
-                    tint = colorScheme.onBackground,
-                )
-            },
-            onClick = { onOpenUrl("https://opencollective.com/SukiSU-Ultra") },
-        )
+        if (DarkNightLinks.SHOW_SUPPORT_CARD && DarkNightLinks.SUPPORT_URL.isNotBlank()) {
+            ArrowPreference(
+                title = stringResource(R.string.home_support_title),
+                summary = stringResource(R.string.home_support_content),
+                startAction = {
+                    Icon(
+                        imageVector = Icons.Filled.VolunteerActivism,
+                        contentDescription = stringResource(R.string.home_support_title),
+                        modifier = Modifier.padding(end = 6.dp),
+                        tint = colorScheme.onBackground,
+                    )
+                },
+                onClick = { onOpenUrl(DarkNightLinks.SUPPORT_URL) },
+            )
+        }
         ArrowPreference(
             title = stringResource(R.string.home_learn_kernelsu),
             summary = stringResource(R.string.home_click_to_learn_kernelsu),

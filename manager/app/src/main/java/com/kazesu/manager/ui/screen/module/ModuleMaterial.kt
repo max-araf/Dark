@@ -490,7 +490,7 @@ fun ModulePagerMaterial(
                 }
 
                 SmallExtendedFloatingActionButton(
-                    modifier = Modifier.padding(bottom = bottomInnerPadding),
+                    modifier = Modifier.padding(bottom = bottomInnerPadding + 14.dp),
                     expanded = fabExpanded,
                     onClick = {
                         // Write access lets the manager delete the picked ZIP after a successful install

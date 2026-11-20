@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBars
@@ -1435,6 +1436,7 @@ private fun ThemeStoreMaterial(
         },
         floatingActionButton = {
             SmallExtendedFloatingActionButton(
+                modifier = Modifier.navigationBarsPadding().padding(bottom = 12.dp),
                 onClick = onInstallLocal,
                 expanded = fabExpanded,
                 icon = {

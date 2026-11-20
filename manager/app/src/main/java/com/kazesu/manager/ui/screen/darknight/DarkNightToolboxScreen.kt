@@ -61,6 +61,7 @@ import com.kazesu.manager.ui.theme.DarkNightAuraBackdrop
 import com.kazesu.manager.ui.theme.DarkNightGlassCard
 import com.kazesu.manager.ui.theme.DarkNightGradientButton
 import com.kazesu.manager.ui.theme.DarkNightThemeStore
+import com.kazesu.manager.ui.theme.DarkNightToastManager
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -90,7 +91,7 @@ fun DarkNightToolboxScreen() {
     var busy by remember { mutableStateOf(false) }
 
     fun toast(msg: String) {
-        Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+        DarkNightToastManager.show(msg)
     }
 
     suspend fun refreshAll() {
@@ -148,20 +149,25 @@ fun DarkNightToolboxScreen() {
                 }
             }
 
-            // Pill-shaped segmented tab bar matching Image 1
+            // Pill-shaped segmented tab bar with auto-scroll & zero edge clipping
+            val tabScrollState = rememberScrollState()
+            LaunchedEffect(selectedTab) {
+                val target = if (tabs.size <= 1) 0 else (tabScrollState.maxValue * selectedTab) / (tabs.size - 1)
+                tabScrollState.animateScrollTo(target)
+            }
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                    .padding(horizontal = 12.dp, vertical = 6.dp),
                 shape = RoundedCornerShape(999.dp),
-                color = Color(0xAA0D1017),
+                color = Color(0xCC0D1017),
                 border = BorderStroke(1.dp, Color.White.copy(alpha = 0.14f)),
             ) {
                 Row(
                     modifier = Modifier
-                        .horizontalScroll(rememberScrollState())
-                        .padding(4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        .horizontalScroll(tabScrollState)
+                        .padding(horizontal = 12.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     tabs.forEachIndexed { index, title ->
                         val active = selectedTab == index
@@ -183,9 +189,11 @@ fun DarkNightToolboxScreen() {
                         ) {
                             Text(
                                 text = title,
-                                color = if (active) Color.White else Color.White.copy(alpha = 0.68f),
+                                color = if (active) Color.White else Color.White.copy(alpha = 0.72f),
                                 fontWeight = if (active) FontWeight.SemiBold else FontWeight.Normal,
                                 fontSize = 13.sp,
+                                maxLines = 1,
+                                softWrap = false,
                             )
                         }
                     }
