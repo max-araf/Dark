@@ -1,4 +1,7 @@
 package com.kazesu.manager.ui.screen.home
+import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.Brush
+import com.kazesu.manager.ui.theme.DarkNightLinks
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically

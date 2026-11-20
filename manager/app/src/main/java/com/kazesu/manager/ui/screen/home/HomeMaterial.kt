@@ -1,4 +1,7 @@
 package com.kazesu.manager.ui.screen.home
+import com.kazesu.manager.ui.theme.DarkNightGlassCard
+import com.kazesu.manager.ui.theme.DarkNightLinks
+import com.kazesu.manager.ui.theme.DarkNightThemeStore
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
