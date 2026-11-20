@@ -1,4 +1,5 @@
 package com.kazesu.manager.ui.screen.colorpalette
+import com.kazesu.manager.ui.theme.DarkNightGradientPaletteSection
 
 import com.kazesu.manager.ui.component.miuix.MiuixTextButtonAffectedByBackground
 import com.kazesu.manager.ai.api.R as AiR

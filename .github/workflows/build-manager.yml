@@ -544,3 +544,33 @@ jobs:
           APK_RELEASE=apk/release/*.apk
           chmod +x telegram-bot-api-binary
           python3 $GITHUB_WORKSPACE/scripts/ksubot.py $APK_RELEASE
+
+  diagnostics:
+    name: DarkNightSu Build Diagnostics
+    if: always()
+    needs: [prepare, build-lkm, build-ksuinit, build-kazezygisk, build-ksud, build-manager, repack-manager]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate Diagnostics Report
+        run: |
+          {
+            echo "=== DarkNightSu Build Diagnostics ==="
+            echo "Commit: ${{ github.sha }}"
+            echo "Branch: ${{ github.ref_name }}"
+            echo "Prepare: ${{ needs.prepare.result }}"
+            echo "GKI LKM (.ko): ${{ needs.build-lkm.result }}"
+            echo "ksuinit: ${{ needs.build-ksuinit.result }}"
+            echo "Built-in Zygisk: ${{ needs.build-kazezygisk.result }}"
+            echo "ksud (4 ABIs): ${{ needs.build-ksud.result }}"
+            echo "Manager APKs (Gradle): ${{ needs.build-manager.result }}"
+            echo "Repack & Sign APKs: ${{ needs.repack-manager.result }}"
+            echo "Release Cert Size: ${{ needs.prepare.outputs.release_size || 'not-set' }}"
+            echo "Release Cert SHA-256: ${{ needs.prepare.outputs.release_hash || 'not-set' }}"
+          } | tee DarkNightSu-Diagnostics.txt
+          cat DarkNightSu-Diagnostics.txt >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload Diagnostics Artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: DarkNightSu-Diagnostics
+          path: DarkNightSu-Diagnostics.txt
