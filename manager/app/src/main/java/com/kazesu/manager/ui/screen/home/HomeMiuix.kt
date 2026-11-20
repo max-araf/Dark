@@ -177,31 +177,7 @@ fun HomePagerMiuix(
                                 }
                             }
                         }
-                        top.yukonga.miuix.kmp.basic.Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable(onClick = actions.onOpenDarkNightThemeStudio),
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 14.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    top.yukonga.miuix.kmp.basic.Text(
-                                        text = "DarkNight Gradient Studio & Theme Store",
-                                        style = top.yukonga.miuix.kmp.theme.MiuixTheme.textStyles.title4,
-                                    )
-                                    top.yukonga.miuix.kmp.basic.Text(
-                                        text = "10 Aura Gradient Palettes • Online Theme Upload & Download",
-                                        style = top.yukonga.miuix.kmp.theme.MiuixTheme.textStyles.body2,
-                                        color = top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                    )
-                                }
-                            }
-                        }
+
                 if (state.showVersionMismatchWarning) {
                     WarningCard(
                         customText(CustomTextKey.HOME_WARN_VERSION_SPOOF),

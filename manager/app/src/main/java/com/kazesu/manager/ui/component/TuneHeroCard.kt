@@ -19,7 +19,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -87,14 +89,14 @@ private fun TuneHeroCardMaterial(
                         fontSize = 15.sp,
                     )
                 }
-                Icon(
-                    painter = painterResource(R.drawable.ic_kazesu_leaf),
+                Image(
+                    painter = painterResource(R.drawable.ic_launcher_darknight_full),
                     contentDescription = null,
                     modifier = Modifier
                         .align(Alignment.CenterEnd)
-                        .padding(end = 12.dp)
-                        .size(72.dp),
-                    tint = MaterialTheme.colorScheme.primary,
+                        .padding(end = 16.dp)
+                        .size(56.dp)
+                        .clip(RoundedCornerShape(16.dp)),
                 )
             }
             if (locked) {
@@ -136,12 +138,12 @@ private fun TuneHeroCardMiuix(
                 )
             }
             Image(
-                painter = painterResource(R.drawable.ic_kazesu_leaf),
+                painter = painterResource(R.drawable.ic_launcher_darknight_full),
                 contentDescription = null,
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
-                    .size(64.dp),
-                colorFilter = ColorFilter.tint(colorScheme.primary),
+                    .size(54.dp)
+                    .clip(RoundedCornerShape(16.dp)),
             )
         }
         if (locked) {

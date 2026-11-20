@@ -480,6 +480,7 @@ fun ColorPaletteScreenMiuix(
                         val usingSystemWallpaper = state.useSystemWallpaper
 
                     if (selectedCategory == ThemeSettingsCategory.COLORS) {
+                    DarkNightGradientPaletteSection()
                     AppCard(
                         modifier = Modifier
                             .bringIntoViewRequester(sectionRequester("colors"))

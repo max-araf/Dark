@@ -134,9 +134,7 @@ fun HomePagerMaterial(
             DarkNightToolboxCard(
                 onClick = actions.onOpenDarkNightToolbox,
             )
-            DarkNightThemeStudioCard(
-                onClick = actions.onOpenDarkNightThemeStudio,
-            )
+
             if (state.showVersionMismatchWarning) {
                 WarningCard(
                     customText(CustomTextKey.HOME_WARN_VERSION_SPOOF),

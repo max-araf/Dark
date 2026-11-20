@@ -287,9 +287,9 @@ class MainActivity : ComponentActivity() {
                 LocalEnableFloatingBottomBarBlur provides uiState.enableFloatingBottomBarBlur,
                 LocalEnableNavigationBadge provides uiState.enableNavigationBadge,
                 LocalModuleDescriptionMaxLines provides uiState.moduleDescriptionMaxLines,
-                LocalBackgroundImagePath provides uiState.customBackgroundUri,
+                LocalBackgroundImagePath provides (uiState.customBackgroundUri.ifEmpty { if (darkNightTheme.auraEnabled) "darknight://aura" else "" }),
                 LocalAppBackgroundBackdrop provides appBackgroundBackdrop.takeIf { captureAppBackground },
-                LocalCardBackgroundAlpha provides (uiState.cardBackgroundAlphaPercent / 100f),
+                LocalCardBackgroundAlpha provides (if (uiState.customBackgroundUri.isEmpty() && darkNightTheme.auraEnabled) 0.58f else (uiState.cardBackgroundAlphaPercent / 100f)),
                 LocalUiMode provides uiMode,
                 LocalCustomTexts provides uiState.customTexts,
             ) {
@@ -500,7 +500,7 @@ class MainActivity : ComponentActivity() {
                             targetState = uiState.customBackgroundUri to uiState.customBackgroundUpdatedAt,
                             label = "global_background",
                         ) { (path, _) ->
-                            if (path.isNotEmpty()) {
+                            if (path.isNotEmpty() && !path.startsWith("darknight://")) {
                                 val context = LocalContext.current
                                 val stamp = File(path).lastModified()
                                 AsyncImage(
@@ -563,7 +563,7 @@ class MainActivity : ComponentActivity() {
                         }
 
                         DarkNightOnboardingOverlay(
-                            visible = splashDismissed && !darkNightTheme.onboardingCompleted,
+                            visible = !darkNightTheme.onboardingCompleted,
                             palette = darkNightTheme.palette,
                             onFinish = { DarkNightThemeStore.setOnboardingCompleted(context, true) },
                         )

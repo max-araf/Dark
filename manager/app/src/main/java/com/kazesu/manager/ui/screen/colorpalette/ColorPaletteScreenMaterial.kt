@@ -160,6 +160,7 @@ import com.kazesu.manager.ui.screen.appicon.BuiltinAppIconPreview
 import com.kazesu.manager.ui.screen.settings.ThemePackageOptions
 import com.kazesu.manager.ui.screen.settings.ThemePackageOptionsSaver
 import com.kazesu.manager.ui.theme.ColorMode
+import com.kazesu.manager.ui.theme.DarkNightGradientPaletteSection
 import com.kazesu.manager.ui.theme.backgroundAwareColor
 import com.kazesu.manager.ui.theme.keyColorOptions
 import com.kazesu.manager.ui.theme.rememberKernelSUColorScheme
@@ -470,6 +471,9 @@ fun ColorPaletteScreenMaterial(
                     }
                 }
                 if (selectedCategory == ThemeSettingsCategory.COLORS) {
+            item {
+                DarkNightGradientPaletteSection()
+            }
             item {
                 SegmentedColumn(modifier = Modifier.padding(horizontal = 16.dp)) {
 

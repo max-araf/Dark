@@ -27,7 +27,15 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import android.widget.Toast
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -558,6 +566,174 @@ fun DarkNightOnboardingOverlay(
                         fontSize = 14.sp,
                     )
                 }
+            }
+        }
+    }
+}
+
+
+/**
+ * Embedded 10-Gradient Palette Picker + Aura & Startup Animation controls
+ * shown directly inside the main Settings -> Theme -> Colors screen.
+ */
+@Composable
+fun DarkNightGradientPaletteSection(
+    modifier: Modifier = Modifier,
+) {
+    val context = LocalContext.current
+    DarkNightThemeStore.init(context)
+    val themeState by DarkNightThemeStore.state.collectAsStateWithLifecycle()
+    val active = themeState.palette
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        DarkNightGlassCard(palette = active) {
+            Text(
+                text = "DarkNight Aura & Gradient Palettes",
+                color = Color.White,
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp,
+            )
+            Text(
+                text = "Active: ${active.name} (${active.hexTop}) — applies across every screen",
+                color = Color.White.copy(alpha = 0.72f),
+                fontSize = 12.sp,
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Global Aura & Frosted Glass", color = Color.White, fontWeight = FontWeight.Medium, fontSize = 14.sp)
+                    Text("Luminous top gradient & translucent cards everywhere", color = Color.White.copy(alpha = 0.65f), fontSize = 11.sp)
+                }
+                Switch(
+                    checked = themeState.auraEnabled,
+                    onCheckedChange = { DarkNightThemeStore.setAuraEnabled(context, it) },
+                )
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Startup Visual Animation", color = Color.White, fontWeight = FontWeight.Medium, fontSize = 14.sp)
+                    Text("Animates smoothly on launch, then settles static", color = Color.White.copy(alpha = 0.65f), fontSize = 11.sp)
+                }
+                Switch(
+                    checked = themeState.startupAnimEnabled,
+                    onCheckedChange = { DarkNightThemeStore.setStartupAnimEnabled(context, it) },
+                )
+            }
+
+            DarkNightPalettes.all.chunked(2).forEach { pair ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    pair.forEach { pal ->
+                        val isSelected = pal.id == active.id
+                        val shape = RoundedCornerShape(16.dp)
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(shape)
+                                .clickable {
+                                    DarkNightThemeStore.selectPalette(context, pal)
+                                    Toast.makeText(context, "Applied ${pal.name}", Toast.LENGTH_SHORT).show()
+                                },
+                            shape = shape,
+                            color = Color(0xBB0D111A),
+                            border = BorderStroke(
+                                width = if (isSelected) 2.dp else 1.dp,
+                                color = if (isSelected) pal.primaryGlow else Color.White.copy(alpha = 0.14f),
+                            ),
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(8.dp),
+                                verticalArrangement = Arrangement.spacedBy(6.dp),
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(52.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(5.dp),
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .fillMaxSize()
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(Brush.verticalGradient(listOf(pal.deepBase, pal.primaryGlow)))
+                                    )
+                                    Box(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .fillMaxSize()
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(Brush.verticalGradient(listOf(pal.primaryGlow, pal.deepBase)))
+                                    )
+                                }
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = pal.name,
+                                            color = Color.White,
+                                            fontWeight = FontWeight.SemiBold,
+                                            fontSize = 12.sp,
+                                            maxLines = 1,
+                                        )
+                                        Text(
+                                            text = pal.hexTop,
+                                            color = Color.White.copy(alpha = 0.6f),
+                                            fontSize = 10.sp,
+                                            maxLines = 1,
+                                        )
+                                    }
+                                    if (isSelected) {
+                                        Icon(
+                                            imageVector = Icons.Filled.CheckCircle,
+                                            contentDescription = "Selected",
+                                            tint = pal.primaryGlow,
+                                            modifier = Modifier.size(16.dp),
+                                        )
+                                    } else {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(12.dp)
+                                                .clip(CircleShape)
+                                                .background(pal.primaryGlow)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if (pair.size == 1) Spacer(modifier = Modifier.weight(1f))
+                }
+            }
+
+            OutlinedButton(
+                onClick = {
+                    DarkNightThemeStore.setOnboardingCompleted(context, false)
+                    Toast.makeText(context, "Startup intro will show on next launch", Toast.LENGTH_SHORT).show()
+                },
+                modifier = Modifier.fillMaxWidth(),
+                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.22f)),
+            ) {
+                Text("Replay Startup Intro Screen", color = Color.White)
             }
         }
     }
