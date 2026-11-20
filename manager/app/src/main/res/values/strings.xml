@@ -1995,4 +1995,10 @@
     <string name="home_limited_mode">Limited mode</string>
     <string name="home_limited_mode_summary">Root available. Kernel features unavailable.</string>
     <string name="home_how_to_integrate_kernel">How to integrate kernel</string>
+    <string name="darknight_subtitle">Kernel-based Root Solution</string>
+    <string name="darknight_toolbox_title">DarkNight Toolbox</string>
+    <string name="darknight_nav_section_menu">MENU</string>
+    <string name="darknight_nav_section_system">SYSTEM</string>
+    <string name="darknight_nav_theme_studio">Theme Studio</string>
+    <string name="darknight_nav_reboot_options">Reboot options</string>
 </resources>

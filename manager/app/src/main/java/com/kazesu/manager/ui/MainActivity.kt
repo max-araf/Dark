@@ -120,7 +120,10 @@ import com.kazesu.manager.ui.theme.DarkNightOnboardingOverlay
 import androidx.compose.ui.graphics.Brush
 import com.kazesu.manager.ui.theme.DarkNightGlassToastHost
 import com.kazesu.manager.ui.theme.DarkNightScreenBackground
+import com.kazesu.manager.ui.component.DarkNightGlassSidebarOverlay
+import com.kazesu.manager.ui.theme.DarkNightNavStyle
 import com.kazesu.manager.ui.theme.DarkNightThemeStore
+import com.kazesu.manager.ui.theme.LocalNavRailPadding
 import com.kazesu.manager.ui.theme.LocalBottomBarPadding
 import com.kazesu.manager.ui.screen.tune.TuneScreen
 import com.kazesu.manager.ui.screen.executemoduleaction.ExecuteModuleActionScreen
@@ -768,7 +771,45 @@ fun MainScreen(
             }
         }
 
-        if (useNavigationRail) {
+        val sidebarThemeState by DarkNightThemeStore.state.collectAsStateWithLifecycle()
+        val useDarkNightGlassSidebar = sidebarThemeState.navStyle == DarkNightNavStyle.GLASS_SIDEBAR
+
+        if (useDarkNightGlassSidebar) {
+            val navBarBottomPadding = WindowInsets.systemBars.asPaddingValues().calculateBottomPadding()
+            val sidebarBackdrop = rememberLayerBackdrop {
+                drawRect(sidebarThemeState.palette.deepBase)
+                drawContent()
+            }
+            CompositionLocalProvider(
+                LocalNavRailPadding provides 80.dp,
+                LocalBottomBarPadding provides (navBarBottomPadding + 16.dp),
+            ) {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .layerBackdrop(sidebarBackdrop)
+                            .padding(start = 80.dp)
+                    ) {
+                        pagerContent(navBarBottomPadding + 16.dp)
+                    }
+
+                    DarkNightGlassSidebarOverlay(
+                        palette = sidebarThemeState.palette,
+                        selectedPage = mainPagerState.selectedPage,
+                        moduleBadgeCount = navigationBadge.moduleEnabledCount,
+                        backdrop = sidebarBackdrop,
+                        animationsEnabled = sidebarThemeState.startupAnimEnabled,
+                        onSelectPage = { page -> mainPagerState.animateToPage(page) },
+                        onOpenDarkTune = { navController.push(Route.Tune) },
+                        onOpenToolbox = { navController.push(Route.DarkNightToolbox) },
+                        onOpenThemeStudio = { navController.push(Route.ColorPalette()) },
+                        onOpenSendLogs = { navController.push(Route.DarkNightToolbox) },
+                        onOpenAbout = { navController.push(Route.About) },
+                    )
+                }
+            }
+        } else if (useNavigationRail) {
             val startInsets = WindowInsets.systemBars.union(WindowInsets.displayCutout)
                 .only(WindowInsetsSides.Start)
             val navBarBottomPadding = WindowInsets.systemBars.asPaddingValues().calculateBottomPadding()
