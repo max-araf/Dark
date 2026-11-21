@@ -2001,4 +2001,15 @@
     <string name="darknight_nav_section_system">SYSTEM</string>
     <string name="darknight_nav_theme_studio">Theme Studio</string>
     <string name="darknight_nav_reboot_options">Reboot options</string>
+
+    <!-- DarkNightSu v4.0.0 Side Info Bar & Pill Dock -->
+    <string name="darknight_infobar_title">Side Info Bar</string>
+    <string name="darknight_infobar_summary">CPU, battery, temperature on edge</string>
+    <string name="darknight_infobar_enable">Show Side Info Bar</string>
+    <string name="darknight_infobar_pin">Pin open</string>
+    <string name="darknight_infobar_pin_summary">Keep expanded without auto-collapse</string>
+    <string name="darknight_infobar_show_cpu">CPU Speed</string>
+    <string name="darknight_infobar_show_battery">Battery</string>
+    <string name="darknight_infobar_show_temp">Temperature</string>
+    <string name="darknight_infobar_open_full">More settings</string>
 </resources>

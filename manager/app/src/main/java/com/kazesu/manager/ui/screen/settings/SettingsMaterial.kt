@@ -52,6 +52,10 @@ import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.runtime.Composable
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.background
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
@@ -227,6 +231,38 @@ fun SettingPagerMaterial(
                                 Icon(
                                     Icons.AutoMirrored.Filled.KeyboardArrowRight,
                                     null
+                                )
+                            }
+                        )
+                    },
+                    {
+                        val dnContext = LocalContext.current
+                        com.kazesu.manager.ui.theme.DarkNightThemeStore.init(dnContext)
+                        val dnState by com.kazesu.manager.ui.theme.DarkNightThemeStore.state.collectAsStateWithLifecycle()
+                        SegmentedListItem(
+                            onClick = actions.onOpenSideInfoBar,
+                            headlineContent = { Text(stringResource(id = R.string.darknight_infobar_title)) },
+                            supportingContent = { Text(stringResource(id = R.string.darknight_infobar_summary)) },
+                            leadingContent = {
+                                androidx.compose.foundation.layout.Box(
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
+                                        .background(MaterialTheme.colorScheme.secondaryContainer),
+                                    contentAlignment = androidx.compose.ui.Alignment.Center,
+                                ) {
+                                    Icon(
+                                        painter = androidx.compose.ui.res.painterResource(R.drawable.ic_dn_cpu),
+                                        contentDescription = stringResource(id = R.string.darknight_infobar_title),
+                                        modifier = Modifier.size(20.dp),
+                                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                                    )
+                                }
+                            },
+                            trailingContent = {
+                                androidx.compose.material3.Switch(
+                                    checked = dnState.infoBarEnabled,
+                                    onCheckedChange = { com.kazesu.manager.ui.theme.DarkNightThemeStore.setInfoBarEnabled(dnContext, it) },
                                 )
                             }
                         )

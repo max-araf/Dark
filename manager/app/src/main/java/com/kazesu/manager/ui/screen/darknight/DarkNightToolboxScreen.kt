@@ -38,6 +38,9 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import com.kazesu.manager.ui.theme.LocalDarkNightGlass
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.AlertDialog
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -79,7 +82,7 @@ fun DarkNightToolboxScreen() {
     val palette = themeState.palette
 
     var selectedTab by remember { mutableIntStateOf(0) }
-    val tabs = listOf("Performance", "Charging", "Integrity", "Monitor", "Rescue")
+    val tabs = listOf("Performance", "Charging", "Integrity", "Monitor", "Rescue", "Tweaks")
 
     var activeMode by remember { mutableStateOf(PerformanceMode.BALANCED) }
     var appRulesText by remember { mutableStateOf("com.dts.freefireth=gaming\ncom.dts.freefiremax=gaming") }
@@ -92,6 +95,9 @@ fun DarkNightToolboxScreen() {
     var bootloopGuard by remember { mutableStateOf(false) }
     var partitions by remember { mutableStateOf<List<PartitionEntry>>(emptyList()) }
     var busy by remember { mutableStateOf(false) }
+    var keyboxResult by remember { mutableStateOf(KeyboxValidationResult()) }
+    var kernelTweaks by remember { mutableStateOf(KernelTweaksSnapshot()) }
+    var pendingTweakAction by remember { mutableStateOf<Pair<String, suspend () -> Pair<Boolean, String>>?>(null) }
 
     fun toast(msg: String) {
         DarkNightToastManager.show(msg)
@@ -107,6 +113,8 @@ fun DarkNightToolboxScreen() {
         telemetry = DarkNightToolboxRepository.readLiveTelemetry()
         bootloopGuard = DarkNightToolboxRepository.isBootloopGuardEnabled()
         partitions = DarkNightToolboxRepository.detectPartitions()
+        keyboxResult = DarkNightToolboxRepository.validateKeyboxXml()
+        kernelTweaks = DarkNightToolboxRepository.loadKernelTweaks()
     }
 
     LaunchedEffect(Unit) { refreshAll() }
@@ -229,7 +237,7 @@ fun DarkNightToolboxScreen() {
             ) {
                 when (selectedTab) {
                     0 -> {
-                        DarkNightGlassCard(palette = palette) {
+                        DarkNightGlassCard(palette = palette, useBlur = false) {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Icon(Icons.Rounded.Memory, contentDescription = null, tint = palette.secondaryGlow)
                                 Text("Global Kernel Profile", color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
@@ -256,7 +264,7 @@ fun DarkNightToolboxScreen() {
                             }
                         }
 
-                        DarkNightGlassCard(palette = palette) {
+                        DarkNightGlassCard(palette = palette, useBlur = false) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -290,7 +298,7 @@ fun DarkNightToolboxScreen() {
                     }
 
                     1 -> {
-                        DarkNightGlassCard(palette = palette) {
+                        DarkNightGlassCard(palette = palette, useBlur = false) {
                             Text("Battery Telemetry", color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
                             Text("Level: ${battery.level}%  •  Status: ${battery.status}", color = Color.White)
                             Text("Temp: ${"%.1f".format(battery.tempC)}°C  •  Current: ${battery.currentMa} mA  •  Voltage: ${battery.voltageMv} mV", color = Color.White.copy(alpha = 0.85f), fontSize = 13.sp)
@@ -301,7 +309,7 @@ fun DarkNightToolboxScreen() {
                             )
                         }
 
-                        DarkNightGlassCard(palette = palette) {
+                        DarkNightGlassCard(palette = palette, useBlur = false) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -345,7 +353,7 @@ fun DarkNightToolboxScreen() {
                     }
 
                     2 -> {
-                        DarkNightGlassCard(palette = palette) {
+                        DarkNightGlassCard(palette = palette, useBlur = false) {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Icon(Icons.Rounded.Security, contentDescription = null, tint = palette.secondaryGlow)
                                 Text("Integrity & Stealth Status", color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
@@ -357,7 +365,7 @@ fun DarkNightToolboxScreen() {
                             Text("PIF Config: ${integrity.pifPath.ifEmpty { "Not found" }}", color = Color.White.copy(alpha = 0.65f), fontSize = 12.sp)
                         }
 
-                        DarkNightGlassCard(palette = palette) {
+                        DarkNightGlassCard(palette = palette, useBlur = false) {
                             Text("TrickyStore target.txt Editor", color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
                             OutlinedTextField(
                                 value = trickyTargets,
@@ -378,10 +386,30 @@ fun DarkNightToolboxScreen() {
                                 },
                             )
                         }
+                        DarkNightGlassCard(palette = palette, useBlur = false) {
+                            Text("Keybox X.509 Certificate Validator", color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+                            Text(
+                                text = keyboxResult.summary,
+                                color = if (keyboxResult.validXml && keyboxResult.expiredCount == 0) Color(0xFF2EE59D) else Color(0xFFFFD60A),
+                                fontSize = 12.sp,
+                            )
+                            OutlinedButton(
+                                onClick = {
+                                    scope.launch {
+                                        keyboxResult = DarkNightToolboxRepository.validateKeyboxXml()
+                                        toast(keyboxResult.summary)
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                border = BorderStroke(1.dp, palette.secondaryGlow.copy(alpha = 0.5f)),
+                            ) {
+                                Text("Re-validate keybox.xml", color = Color.White)
+                            }
+                        }
                     }
 
                     3 -> {
-                        DarkNightGlassCard(palette = palette) {
+                        DarkNightGlassCard(palette = palette, useBlur = false) {
                             Text("Live Kernel Telemetry", color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
                             Text("Kernel: ${telemetry.kernelRelease}", color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp)
                             Text("Uptime: ${telemetry.uptime}", color = Color.White)
@@ -392,7 +420,7 @@ fun DarkNightToolboxScreen() {
                             }
                         }
 
-                        DarkNightGlassCard(palette = palette) {
+                        DarkNightGlassCard(palette = palette, useBlur = false) {
                             Text("1-Click Kernel & System Log Dumper", color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
                             Text(
                                 "Bundles dmesg, last_kmsg / console-ramoops, logcat, and getprop into /sdcard/Download/DarkNightSu/.",
@@ -416,7 +444,7 @@ fun DarkNightToolboxScreen() {
                     }
 
                     4 -> {
-                        DarkNightGlassCard(palette = palette) {
+                        DarkNightGlassCard(palette = palette, useBlur = false) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -470,7 +498,7 @@ fun DarkNightToolboxScreen() {
                             }
                         }
 
-                        DarkNightGlassCard(palette = palette) {
+                        DarkNightGlassCard(palette = palette, useBlur = false) {
                             Text("Partition Backup (Boot / DTBO / VBMeta)", color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
                             Text(
                                 "Dumps raw partition images + SHA-256 to /sdcard/Download/DarkNightSu/backups/.",
@@ -500,8 +528,127 @@ fun DarkNightToolboxScreen() {
                             }
                         }
                     }
+
+                    5 -> {
+                        DarkNightGlassCard(palette = palette, useBlur = false) {
+                            Text("ZRAM & Memory", color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+                            Text(
+                                "ZRAM: ${kernelTweaks.zramSizeMb} MB (${kernelTweaks.zramAlgo})  •  Swappiness: ${kernelTweaks.swappiness}",
+                                color = Color.White.copy(alpha = 0.85f),
+                                fontSize = 13.sp,
+                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                listOf(10, 40, 60, 100).forEach { swapVal ->
+                                    val active = kernelTweaks.swappiness == swapVal
+                                    OutlinedButton(
+                                        onClick = {
+                                            pendingTweakAction = "Set vm.swappiness to $swapVal?" to {
+                                                DarkNightToolboxRepository.applySwappiness(swapVal)
+                                            }
+                                        },
+                                        modifier = Modifier.weight(1f),
+                                        border = BorderStroke(1.dp, if (active) palette.primaryGlow else Color.White.copy(alpha = 0.22f)),
+                                    ) {
+                                        Text("$swapVal", color = Color.White, fontSize = 12.sp)
+                                    }
+                                }
+                            }
+                        }
+
+                        DarkNightGlassCard(palette = palette, useBlur = false) {
+                            Text("I/O Scheduler (${kernelTweaks.ioBlockDev.ifBlank { "none" }})", color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+                            Text("Active: ${kernelTweaks.ioCurrent}", color = palette.secondaryGlow, fontSize = 13.sp)
+                            if (kernelTweaks.ioAvailable.isEmpty()) {
+                                Text("No kernel I/O schedulers readable (root required).", color = Color.White.copy(alpha = 0.65f), fontSize = 12.sp)
+                            } else {
+                                kernelTweaks.ioAvailable.chunked(3).forEach { rowItems ->
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    ) {
+                                        rowItems.forEach { sched ->
+                                            val active = sched == kernelTweaks.ioCurrent
+                                            OutlinedButton(
+                                                onClick = {
+                                                    pendingTweakAction = "Switch I/O scheduler on ${kernelTweaks.ioBlockDev} to '$sched'?" to {
+                                                        DarkNightToolboxRepository.applyIoScheduler(kernelTweaks.ioBlockDev, sched)
+                                                    }
+                                                },
+                                                modifier = Modifier.weight(1f),
+                                                border = BorderStroke(1.dp, if (active) palette.primaryGlow else Color.White.copy(alpha = 0.22f)),
+                                            ) {
+                                                Text(sched, color = Color.White, fontSize = 11.sp, maxLines = 1)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        DarkNightGlassCard(palette = palette, useBlur = false) {
+                            Text("TCP Congestion Control", color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+                            Text("Active: ${kernelTweaks.tcpCurrent}", color = palette.secondaryGlow, fontSize = 13.sp)
+                            if (kernelTweaks.tcpAvailable.isEmpty()) {
+                                Text("No TCP algorithms readable.", color = Color.White.copy(alpha = 0.65f), fontSize = 12.sp)
+                            } else {
+                                kernelTweaks.tcpAvailable.chunked(3).forEach { rowItems ->
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    ) {
+                                        rowItems.forEach { algo ->
+                                            val active = algo == kernelTweaks.tcpCurrent
+                                            OutlinedButton(
+                                                onClick = {
+                                                    pendingTweakAction = "Switch TCP congestion control to '$algo'?" to {
+                                                        DarkNightToolboxRepository.applyTcpCongestion(algo)
+                                                    }
+                                                },
+                                                modifier = Modifier.weight(1f),
+                                                border = BorderStroke(1.dp, if (active) palette.primaryGlow else Color.White.copy(alpha = 0.22f)),
+                                            ) {
+                                                Text(algo, color = Color.White, fontSize = 11.sp, maxLines = 1)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
+        }
+
+        pendingTweakAction?.let { (prompt, action) ->
+            val glass = LocalDarkNightGlass.current
+            AlertDialog(
+                onDismissRequest = { pendingTweakAction = null },
+                containerColor = if (glass.isDark) Color(0xEE0B101D) else Color(0xF5FFFFFF),
+                title = { Text("Confirm Kernel Tweak", color = glass.content, fontWeight = FontWeight.Bold) },
+                text = { Text(prompt, color = glass.contentSecondary, fontSize = 13.sp) },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            pendingTweakAction = null
+                            scope.launch {
+                                val (_, msg) = action()
+                                kernelTweaks = DarkNightToolboxRepository.loadKernelTweaks()
+                                toast(msg)
+                            }
+                        }
+                    ) {
+                        Text("Apply", color = palette.primaryGlow, fontWeight = FontWeight.SemiBold)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { pendingTweakAction = null }) {
+                        Text("Cancel", color = glass.contentSecondary)
+                    }
+                },
+            )
         }
     }
 }

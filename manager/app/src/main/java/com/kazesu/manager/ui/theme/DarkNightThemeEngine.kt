@@ -2,6 +2,7 @@ package com.kazesu.manager.ui.theme
 
 import android.content.Context
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
@@ -10,7 +11,10 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,15 +31,14 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import android.widget.Toast
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
-import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -43,36 +46,38 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
-import top.yukonga.miuix.kmp.shader.isRenderEffectSupported
-import top.yukonga.miuix.kmp.blur.textureBlur
-import top.yukonga.miuix.kmp.blur.BlurColors
-import top.yukonga.miuix.kmp.blur.BlendColorEntry
-import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.foundation.border
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.unit.dp
-import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import top.yukonga.miuix.kmp.blur.BlendColorEntry
+import top.yukonga.miuix.kmp.blur.BlurColors
+import top.yukonga.miuix.kmp.blur.textureBlur
+import top.yukonga.miuix.kmp.shader.isRenderEffectSupported
+import kotlin.math.roundToInt
 
 data class DarkNightPalette(
     val id: String,
@@ -241,8 +246,6 @@ enum class DarkNightBlurQuality(val id: String, val label: String, val radius: F
     }
 }
 
-fun contrastOn(bg: Color): Color = if (bg.luminance() > 0.45f) Color(0xFF0A0D14) else Color.White
-
 enum class DarkNightNavStyle(val id: String) {
     BOTTOM_BAR("bottom_bar"),
     GLASS_SIDEBAR("glass_sidebar");
@@ -252,8 +255,96 @@ enum class DarkNightNavStyle(val id: String) {
     }
 }
 
+enum class DarkNightDockStyle(val id: String, val label: String) {
+    GLASS("glass", "Glass"),
+    DARK_SOLID("dark_solid", "Dark Solid");
+
+    companion object {
+        fun byId(id: String?): DarkNightDockStyle = entries.firstOrNull { it.id == id } ?: GLASS
+    }
+}
+
+/**
+ * Unified Dark / Light Glass visual recipe (v4.0.0 T1).
+ * Every surface, top bar, pill dock, rail, drawer, card, and text color derives from this single object.
+ */
+data class DarkNightGlassTheme(
+    val isDark: Boolean,
+    val base: Color,
+    val accent: Color,
+    val accentDark: Color,
+    val lite: Color,
+    val fillA: Color,
+    val fillB: Color,
+    val borderLite: Color,
+    val shadow: Color,
+    val highlight: Color,
+    val content: Color,
+    val contentSecondary: Color,
+    val systemBarIconsLight: Boolean,
+)
+
+fun buildDarkNightGlassTheme(
+    palette: DarkNightPalette,
+    isDark: Boolean,
+    amoled: Boolean,
+): DarkNightGlassTheme {
+    val accentDark = lerp(palette.primaryGlow, Color(0xFF0B1020), 0.35f)
+    return if (isDark) {
+        DarkNightGlassTheme(
+            isDark = true,
+            base = if (amoled) Color.Black else palette.deepBase,
+            accent = palette.primaryGlow,
+            accentDark = accentDark,
+            lite = palette.secondaryGlow,
+            fillA = Color.White.copy(alpha = 0.13f),
+            fillB = Color.White.copy(alpha = 0.04f),
+            borderLite = palette.secondaryGlow,
+            shadow = Color.Black.copy(alpha = 0.16f),
+            highlight = Color.White.copy(alpha = 0.12f),
+            content = Color.White,
+            contentSecondary = Color.White.copy(alpha = 0.62f),
+            systemBarIconsLight = false,
+        )
+    } else {
+        DarkNightGlassTheme(
+            isDark = false,
+            base = Color(0xFFF3F5FB),
+            accent = palette.primaryGlow,
+            accentDark = accentDark,
+            lite = palette.secondaryGlow,
+            fillA = Color.White.copy(alpha = 0.72f),
+            fillB = Color.White.copy(alpha = 0.34f),
+            borderLite = accentDark,
+            shadow = accentDark.copy(alpha = 0.14f),
+            highlight = Color.White.copy(alpha = 0.95f),
+            content = Color(0xFF0B1020),
+            contentSecondary = Color(0xFF0B1020).copy(alpha = 0.62f),
+            systemBarIconsLight = true,
+        )
+    }
+}
+
+@Composable
+fun rememberDarkNightGlassTheme(
+    palette: DarkNightPalette,
+    isDark: Boolean,
+    amoled: Boolean,
+): DarkNightGlassTheme = remember(palette.id, isDark, amoled) {
+    buildDarkNightGlassTheme(palette, isDark, amoled)
+}
+
+val LocalDarkNightGlass = staticCompositionLocalOf {
+    buildDarkNightGlassTheme(DarkNightPalettes.DarkNightAura, isDark = true, amoled = false)
+}
+
 /** Shared left clearance when Glass Sidebar Rail is active (80dp). */
 val LocalNavRailPadding = staticCompositionLocalOf<Dp> { 0.dp }
+
+/** Shared right clearance when Side Info Bar is pinned open (62dp). */
+val LocalSideInfoBarPadding = staticCompositionLocalOf<Dp> { 0.dp }
+
+fun contrastOn(bg: Color): Color = if (bg.luminance() > 0.45f) Color(0xFF0B1020) else Color.White
 
 data class DarkNightThemeState(
     val palette: DarkNightPalette = DarkNightPalettes.DarkNightAura,
@@ -261,8 +352,22 @@ data class DarkNightThemeState(
     val startupAnimEnabled: Boolean = true,
     val onboardingCompleted: Boolean = false,
     val navStyle: DarkNightNavStyle = DarkNightNavStyle.BOTTOM_BAR,
+    val dockStyle: DarkNightDockStyle = DarkNightDockStyle.GLASS,
     val blurQuality: DarkNightBlurQuality = DarkNightBlurQuality.HIGH,
     val amoledBlack: Boolean = false,
+    // PART 3: Side Info Bar preferences
+    val infoBarEnabled: Boolean = true,
+    val infoBarPinned: Boolean = false,
+    val infoBarShowCpu: Boolean = true,
+    val infoBarShowBattery: Boolean = true,
+    val infoBarShowTemp: Boolean = true,
+    val infoBarTempSourceCpu: Boolean = false,
+    val infoBarUnitF: Boolean = false,
+    val infoBarOpacityPercent: Int = 100,
+    val infoBarVerticalPercent: Int = 30,
+    // PART 4: Appearance sliders
+    val cardCornerRadiusDp: Int = 20,
+    val borderHighlightEnabled: Boolean = true,
 )
 
 object DarkNightThemeStore {
@@ -272,8 +377,24 @@ object DarkNightThemeStore {
     private const val KEY_STARTUP_ANIM = "startup_anim_enabled"
     private const val KEY_ONBOARDING_DONE = "onboarding_done"
     private const val KEY_NAV_STYLE = "nav_style"
+    private const val KEY_DOCK_STYLE = "dock_style"
     private const val KEY_BLUR_QUALITY = "blur_quality"
     private const val KEY_AMOLED_BLACK = "amoled_black"
+    private const val KEY_INFOBAR_ENABLED = "infobar_enabled"
+    private const val KEY_INFOBAR_PINNED = "infobar_pinned"
+    private const val KEY_INFOBAR_CPU = "infobar_show_cpu"
+    private const val KEY_INFOBAR_BATTERY = "infobar_show_battery"
+    private const val KEY_INFOBAR_TEMP = "infobar_show_temp"
+    private const val KEY_INFOBAR_TEMP_CPU = "infobar_temp_source_cpu"
+    private const val KEY_INFOBAR_UNIT_F = "infobar_unit_f"
+    private const val KEY_INFOBAR_OPACITY = "infobar_opacity_pct"
+    private const val KEY_INFOBAR_VPOS = "infobar_vertical_pct"
+    private const val KEY_CARD_CORNER_DP = "card_corner_dp"
+    private const val KEY_BORDER_HIGHLIGHT = "border_highlight_enabled"
+
+    /** Process-level flag so SplashScreen only plays on cold start, never on theme/UI-style change (T3). */
+    @Volatile
+    var coldStartSplashShown: Boolean = false
 
     private val _state = MutableStateFlow(DarkNightThemeState())
     val state: StateFlow<DarkNightThemeState> = _state.asStateFlow()
@@ -292,82 +413,178 @@ object DarkNightThemeStore {
                 startupAnimEnabled = prefs.getBoolean(KEY_STARTUP_ANIM, true),
                 onboardingCompleted = prefs.getBoolean(KEY_ONBOARDING_DONE, false),
                 navStyle = DarkNightNavStyle.byId(prefs.getString(KEY_NAV_STYLE, DarkNightNavStyle.BOTTOM_BAR.id)),
+                dockStyle = DarkNightDockStyle.byId(prefs.getString(KEY_DOCK_STYLE, DarkNightDockStyle.GLASS.id)),
                 blurQuality = DarkNightBlurQuality.byId(prefs.getString(KEY_BLUR_QUALITY, DarkNightBlurQuality.HIGH.id)),
                 amoledBlack = prefs.getBoolean(KEY_AMOLED_BLACK, false),
+                infoBarEnabled = prefs.getBoolean(KEY_INFOBAR_ENABLED, true),
+                infoBarPinned = prefs.getBoolean(KEY_INFOBAR_PINNED, false),
+                infoBarShowCpu = prefs.getBoolean(KEY_INFOBAR_CPU, true),
+                infoBarShowBattery = prefs.getBoolean(KEY_INFOBAR_BATTERY, true),
+                infoBarShowTemp = prefs.getBoolean(KEY_INFOBAR_TEMP, true),
+                infoBarTempSourceCpu = prefs.getBoolean(KEY_INFOBAR_TEMP_CPU, false),
+                infoBarUnitF = prefs.getBoolean(KEY_INFOBAR_UNIT_F, false),
+                infoBarOpacityPercent = prefs.getInt(KEY_INFOBAR_OPACITY, 100).coerceIn(50, 100),
+                infoBarVerticalPercent = prefs.getInt(KEY_INFOBAR_VPOS, 30).coerceIn(15, 70),
+                cardCornerRadiusDp = prefs.getInt(KEY_CARD_CORNER_DP, 20).coerceIn(12, 28),
+                borderHighlightEnabled = prefs.getBoolean(KEY_BORDER_HIGHLIGHT, true),
             )
             initialized = true
         }
     }
 
+    private fun prefs(context: Context) =
+        context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+
     fun selectPalette(context: Context, palette: DarkNightPalette) {
         init(context)
-        context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            .edit()
-            .putString(KEY_PALETTE, palette.id)
-            .apply()
+        prefs(context).edit().putString(KEY_PALETTE, palette.id).apply()
         _state.value = _state.value.copy(palette = palette)
     }
 
     fun setAuraEnabled(context: Context, enabled: Boolean) {
         init(context)
-        context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            .edit()
-            .putBoolean(KEY_AURA, enabled)
-            .apply()
+        prefs(context).edit().putBoolean(KEY_AURA, enabled).apply()
         _state.value = _state.value.copy(auraEnabled = enabled)
     }
 
     fun setStartupAnimEnabled(context: Context, enabled: Boolean) {
         init(context)
-        context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            .edit()
-            .putBoolean(KEY_STARTUP_ANIM, enabled)
-            .apply()
+        prefs(context).edit().putBoolean(KEY_STARTUP_ANIM, enabled).apply()
         _state.value = _state.value.copy(startupAnimEnabled = enabled)
     }
 
     fun setOnboardingCompleted(context: Context, completed: Boolean) {
         init(context)
-        context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            .edit()
-            .putBoolean(KEY_ONBOARDING_DONE, completed)
-            .apply()
+        prefs(context).edit().putBoolean(KEY_ONBOARDING_DONE, completed).apply()
         _state.value = _state.value.copy(onboardingCompleted = completed)
     }
 
     fun setNavStyle(context: Context, style: DarkNightNavStyle) {
         init(context)
-        context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            .edit()
-            .putString(KEY_NAV_STYLE, style.id)
-            .apply()
+        prefs(context).edit().putString(KEY_NAV_STYLE, style.id).apply()
         _state.value = _state.value.copy(navStyle = style)
+    }
+
+    fun setDockStyle(context: Context, style: DarkNightDockStyle) {
+        init(context)
+        prefs(context).edit().putString(KEY_DOCK_STYLE, style.id).apply()
+        _state.value = _state.value.copy(dockStyle = style)
     }
 
     fun setBlurQuality(context: Context, quality: DarkNightBlurQuality) {
         init(context)
-        context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            .edit()
-            .putString(KEY_BLUR_QUALITY, quality.id)
-            .apply()
+        prefs(context).edit().putString(KEY_BLUR_QUALITY, quality.id).apply()
         _state.value = _state.value.copy(blurQuality = quality)
     }
 
     fun setAmoledBlack(context: Context, enabled: Boolean) {
         init(context)
-        context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            .edit()
-            .putBoolean(KEY_AMOLED_BLACK, enabled)
-            .apply()
+        prefs(context).edit().putBoolean(KEY_AMOLED_BLACK, enabled).apply()
         _state.value = _state.value.copy(amoledBlack = enabled)
+    }
+
+    fun setInfoBarEnabled(context: Context, enabled: Boolean) {
+        init(context)
+        prefs(context).edit().putBoolean(KEY_INFOBAR_ENABLED, enabled).apply()
+        _state.value = _state.value.copy(infoBarEnabled = enabled)
+    }
+
+    fun setInfoBarPinned(context: Context, pinned: Boolean) {
+        init(context)
+        prefs(context).edit().putBoolean(KEY_INFOBAR_PINNED, pinned).apply()
+        _state.value = _state.value.copy(infoBarPinned = pinned)
+    }
+
+    fun setInfoBarRing(context: Context, key: String, enabled: Boolean) {
+        init(context)
+        val cur = _state.value
+        val next = when (key) {
+            "cpu" -> cur.copy(infoBarShowCpu = enabled)
+            "battery" -> cur.copy(infoBarShowBattery = enabled)
+            "temp" -> cur.copy(infoBarShowTemp = enabled)
+            else -> cur
+        }
+        // Keep at least one ring visible so the bar is never empty
+        if (!next.infoBarShowCpu && !next.infoBarShowBattery && !next.infoBarShowTemp) return
+        prefs(context).edit()
+            .putBoolean(KEY_INFOBAR_CPU, next.infoBarShowCpu)
+            .putBoolean(KEY_INFOBAR_BATTERY, next.infoBarShowBattery)
+            .putBoolean(KEY_INFOBAR_TEMP, next.infoBarShowTemp)
+            .apply()
+        _state.value = next
+    }
+
+    fun setInfoBarTempSourceCpu(context: Context, useCpu: Boolean) {
+        init(context)
+        prefs(context).edit().putBoolean(KEY_INFOBAR_TEMP_CPU, useCpu).apply()
+        _state.value = _state.value.copy(infoBarTempSourceCpu = useCpu)
+    }
+
+    fun setInfoBarUnitF(context: Context, useFahrenheit: Boolean) {
+        init(context)
+        prefs(context).edit().putBoolean(KEY_INFOBAR_UNIT_F, useFahrenheit).apply()
+        _state.value = _state.value.copy(infoBarUnitF = useFahrenheit)
+    }
+
+    fun setInfoBarOpacity(context: Context, percent: Int) {
+        init(context)
+        val clamped = percent.coerceIn(50, 100)
+        prefs(context).edit().putInt(KEY_INFOBAR_OPACITY, clamped).apply()
+        _state.value = _state.value.copy(infoBarOpacityPercent = clamped)
+    }
+
+    fun setInfoBarVerticalPercent(context: Context, percent: Int) {
+        init(context)
+        val clamped = percent.coerceIn(15, 70)
+        prefs(context).edit().putInt(KEY_INFOBAR_VPOS, clamped).apply()
+        _state.value = _state.value.copy(infoBarVerticalPercent = clamped)
+    }
+
+    fun resetInfoBarDefaults(context: Context) {
+        init(context)
+        prefs(context).edit()
+            .putBoolean(KEY_INFOBAR_ENABLED, true)
+            .putBoolean(KEY_INFOBAR_PINNED, false)
+            .putBoolean(KEY_INFOBAR_CPU, true)
+            .putBoolean(KEY_INFOBAR_BATTERY, true)
+            .putBoolean(KEY_INFOBAR_TEMP, true)
+            .putBoolean(KEY_INFOBAR_TEMP_CPU, false)
+            .putBoolean(KEY_INFOBAR_UNIT_F, false)
+            .putInt(KEY_INFOBAR_OPACITY, 100)
+            .putInt(KEY_INFOBAR_VPOS, 30)
+            .apply()
+        _state.value = _state.value.copy(
+            infoBarEnabled = true,
+            infoBarPinned = false,
+            infoBarShowCpu = true,
+            infoBarShowBattery = true,
+            infoBarShowTemp = true,
+            infoBarTempSourceCpu = false,
+            infoBarUnitF = false,
+            infoBarOpacityPercent = 100,
+            infoBarVerticalPercent = 30,
+        )
+    }
+
+    fun setCardCornerRadius(context: Context, radiusDp: Int) {
+        init(context)
+        val clamped = radiusDp.coerceIn(12, 28)
+        prefs(context).edit().putInt(KEY_CARD_CORNER_DP, clamped).apply()
+        _state.value = _state.value.copy(cardCornerRadiusDp = clamped)
+    }
+
+    fun setBorderHighlight(context: Context, enabled: Boolean) {
+        init(context)
+        prefs(context).edit().putBoolean(KEY_BORDER_HIGHLIGHT, enabled).apply()
+        _state.value = _state.value.copy(borderHighlightEnabled = enabled)
     }
 
     fun activeKeyColorArgb(): Int = _state.value.palette.primaryGlow.toArgb()
 }
 
 /**
- * Luminous top-corner aura backdrop inspired by the Zentra dark UI:
- * plays a smooth one-shot bloom animation on start, then settles completely static.
+ * Luminous multi-blob Aura backdrop (supports both Dark Glass and Light Glass recipes, T1/T3).
+ * Smooth 300ms color transitions on palette or Light/Dark mode change — zero harsh flash.
  */
 @Composable
 fun DarkNightAuraBackdrop(
@@ -375,11 +592,11 @@ fun DarkNightAuraBackdrop(
     animateOnStart: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
-    val progress = remember(palette.id, animateOnStart) {
+    val progress = remember(animateOnStart) {
         Animatable(if (animateOnStart) 0f else 1f)
     }
-    LaunchedEffect(palette.id, animateOnStart) {
-        if (animateOnStart) {
+    LaunchedEffect(animateOnStart) {
+        if (animateOnStart && progress.value < 1f) {
             progress.animateTo(
                 targetValue = 1f,
                 animationSpec = tween(durationMillis = 1250, easing = FastOutSlowInEasing),
@@ -389,8 +606,25 @@ fun DarkNightAuraBackdrop(
     val p = progress.value
 
     val themeState by DarkNightThemeStore.state.collectAsStateWithLifecycle()
-    val amoled = themeState.amoledBlack
-    val baseBg = if (amoled) Color.Black else palette.deepBase
+    val glass = LocalDarkNightGlass.current
+    val amoled = themeState.amoledBlack && glass.isDark
+
+    val baseBg by animateColorAsState(
+        targetValue = glass.base,
+        animationSpec = tween(durationMillis = 300),
+        label = "aura_base_bg",
+    )
+    val accent by animateColorAsState(
+        targetValue = palette.primaryGlow,
+        animationSpec = tween(durationMillis = 300),
+        label = "aura_accent",
+    )
+    val lite by animateColorAsState(
+        targetValue = palette.secondaryGlow,
+        animationSpec = tween(durationMillis = 300),
+        label = "aura_lite",
+    )
+
     val blobMul = if (amoled) 0.70f else 1.0f
 
     Canvas(
@@ -401,101 +635,149 @@ fun DarkNightAuraBackdrop(
         val w = size.width
         val h = size.height
 
-        // 1. Top-left primary glow (~420x330dp, accent @ 0.62)
-        drawRect(
-            brush = Brush.radialGradient(
-                colors = listOf(
-                    palette.primaryGlow.copy(alpha = 0.62f * p * blobMul),
-                    palette.primaryGlow.copy(alpha = 0.26f * p * blobMul),
-                    Color.Transparent,
-                ),
-                center = Offset(w * (0.16f + 0.10f * p), h * (0.04f + 0.06f * p)),
-                radius = w * (0.90f + 0.18f * p),
+        if (glass.isDark) {
+            // 1. Top-left primary glow (accent @ 0.62)
+            drawRect(
+                brush = Brush.radialGradient(
+                    colors = listOf(
+                        accent.copy(alpha = 0.62f * p * blobMul),
+                        accent.copy(alpha = 0.26f * p * blobMul),
+                        Color.Transparent,
+                    ),
+                    center = Offset(w * (0.16f + 0.10f * p), h * (0.04f + 0.06f * p)),
+                    radius = w * (0.90f + 0.18f * p),
+                )
             )
-        )
-
-        // 2. Upper-right secondary highlight mist
-        drawRect(
-            brush = Brush.radialGradient(
-                colors = listOf(
-                    palette.secondaryGlow.copy(alpha = 0.42f * p * blobMul),
-                    palette.primaryGlow.copy(alpha = 0.14f * p * blobMul),
-                    Color.Transparent,
-                ),
-                center = Offset(w * (0.88f - 0.12f * p), h * (0.05f + 0.06f * p)),
-                radius = w * 0.65f,
+            // 2. Upper-right secondary highlight mist
+            drawRect(
+                brush = Brush.radialGradient(
+                    colors = listOf(
+                        lite.copy(alpha = 0.42f * p * blobMul),
+                        accent.copy(alpha = 0.14f * p * blobMul),
+                        Color.Transparent,
+                    ),
+                    center = Offset(w * (0.88f - 0.12f * p), h * (0.05f + 0.06f * p)),
+                    radius = w * 0.65f,
+                )
             )
-        )
-
-        // 3. Right-mid blob (accent @ 0.34, ~300dp) so mid-screen glass cards refract color
-        drawRect(
-            brush = Brush.radialGradient(
-                colors = listOf(
-                    palette.primaryGlow.copy(alpha = 0.34f * p * blobMul),
-                    Color.Transparent,
-                ),
-                center = Offset(w * 0.92f, h * 0.46f),
-                radius = w * 0.72f,
+            // 3. Right-mid blob (accent @ 0.34)
+            drawRect(
+                brush = Brush.radialGradient(
+                    colors = listOf(
+                        accent.copy(alpha = 0.34f * p * blobMul),
+                        Color.Transparent,
+                    ),
+                    center = Offset(w * 0.92f, h * 0.46f),
+                    radius = w * 0.72f,
+                )
             )
-        )
-
-        // 4. Left-lower blob (lite @ 0.20, ~260x220dp)
-        drawRect(
-            brush = Brush.radialGradient(
-                colors = listOf(
-                    palette.secondaryGlow.copy(alpha = 0.20f * p * blobMul),
-                    Color.Transparent,
-                ),
-                center = Offset(w * 0.12f, h * 0.68f),
-                radius = w * 0.62f,
+            // 4. Left-lower blob (lite @ 0.20)
+            drawRect(
+                brush = Brush.radialGradient(
+                    colors = listOf(
+                        lite.copy(alpha = 0.20f * p * blobMul),
+                        Color.Transparent,
+                    ),
+                    center = Offset(w * 0.12f, h * 0.68f),
+                    radius = w * 0.62f,
+                )
             )
-        )
-
-        // 5. Bottom-right blob (accent @ 0.45, ~360x260dp)
-        drawRect(
-            brush = Brush.radialGradient(
-                colors = listOf(
-                    palette.primaryGlow.copy(alpha = 0.45f * p * blobMul),
-                    Color.Transparent,
-                ),
-                center = Offset(w * 0.85f, h * 0.92f),
-                radius = w * 0.82f,
+            // 5. Bottom-right blob (accent @ 0.45)
+            drawRect(
+                brush = Brush.radialGradient(
+                    colors = listOf(
+                        accent.copy(alpha = 0.45f * p * blobMul),
+                        Color.Transparent,
+                    ),
+                    center = Offset(w * 0.85f, h * 0.92f),
+                    radius = w * 0.82f,
+                )
             )
-        )
+        } else {
+            // Light Glass pastel blobs: accent 34% / 26%, soft violet 16%, sky 24%
+            val softViolet = Color(0xFF7C5CFF)
+            val softSky = Color(0xFF4EA8FF)
+            drawRect(
+                brush = Brush.radialGradient(
+                    colors = listOf(
+                        accent.copy(alpha = 0.34f * p),
+                        accent.copy(alpha = 0.12f * p),
+                        Color.Transparent,
+                    ),
+                    center = Offset(w * 0.22f, h * 0.08f),
+                    radius = w * 0.95f,
+                )
+            )
+            drawRect(
+                brush = Brush.radialGradient(
+                    colors = listOf(
+                        softSky.copy(alpha = 0.24f * p),
+                        Color.Transparent,
+                    ),
+                    center = Offset(w * 0.85f, h * 0.12f),
+                    radius = w * 0.72f,
+                )
+            )
+            drawRect(
+                brush = Brush.radialGradient(
+                    colors = listOf(
+                        softViolet.copy(alpha = 0.16f * p),
+                        Color.Transparent,
+                    ),
+                    center = Offset(w * 0.88f, h * 0.50f),
+                    radius = w * 0.75f,
+                )
+            )
+            drawRect(
+                brush = Brush.radialGradient(
+                    colors = listOf(
+                        accent.copy(alpha = 0.26f * p),
+                        Color.Transparent,
+                    ),
+                    center = Offset(w * 0.18f, h * 0.86f),
+                    radius = w * 0.80f,
+                )
+            )
+        }
     }
 }
 
 /**
- * Translucent obsidian glass card with hairline 1dp border matching the Zentra reference UI.
- */
-/**
- * Global Liquid Frosted Glass modifier (FIX-A1):
- * - Fill: 135-deg White 13% -> White 4% (zero opaque solid gray)
- * - Real GPU textureBlur (18dp High / 10dp Low / Off) on API 31+ using shared app backdrop
- * - Palette-tinted 1dp gradient border: lite 40% -> 7% -> 16% (neutral palette capped at 30%)
- * - Top 1dp inner specular highlight (White @ 12%)
- * - Bright palettes auto-add dark 28% scrim for WCAG readability
+ * Global Liquid Frosted Glass modifier (Dark Glass & Light Glass recipes, T1/T8):
+ * - Pass `useBlur = false` on long scrollable lists (DarkTune, Toolbox) to prevent GPU text garbling / jank.
  */
 @Composable
 fun Modifier.darkNightGlassCardSurface(
     shape: Shape = RoundedCornerShape(20.dp),
     isMonospaceDark: Boolean = false,
+    useBlur: Boolean = true,
 ): Modifier {
     val context = LocalContext.current
     DarkNightThemeStore.init(context)
     val themeState by DarkNightThemeStore.state.collectAsStateWithLifecycle()
     val palette = themeState.palette
+    val glass = LocalDarkNightGlass.current
     val backdrop = LocalAppBackgroundBackdrop.current
     val blurQuality = themeState.blurQuality
-    val hasRealBlur = blurQuality != DarkNightBlurQuality.OFF &&
+    val hasRealBlur = useBlur &&
+        blurQuality != DarkNightBlurQuality.OFF &&
         backdrop != null &&
         isRenderEffectSupported()
 
     val isNeutral = palette.id == DarkNightPalettes.RoyalCharcoal.id
     val isBright = palette.primaryGlow.luminance() > 0.45f
-    val borderTint = if (isNeutral) lerp(palette.secondaryGlow, palette.primaryGlow, 0.4f) else palette.secondaryGlow
-    val maxBorderAlpha = if (isNeutral) 0.30f else 0.40f
-    val baseBg = if (themeState.amoledBlack) Color.Black else palette.deepBase
+    val borderTint = if (glass.isDark) {
+        if (isNeutral) lerp(palette.secondaryGlow, palette.primaryGlow, 0.4f) else palette.secondaryGlow
+    } else {
+        glass.accentDark
+    }
+    val maxBorderAlpha = if (glass.isDark) {
+        if (isNeutral) 0.30f else 0.40f
+    } else {
+        0.30f
+    }
+    val midBorderAlpha = if (glass.isDark) 0.07f else 0.06f
+    val endBorderAlpha = if (glass.isDark) 0.16f else 0.14f
 
     val blurMod = if (hasRealBlur && backdrop != null) {
         this.textureBlur(
@@ -504,7 +786,9 @@ fun Modifier.darkNightGlassCardSurface(
             blurRadius = blurQuality.radius,
             colors = BlurColors(
                 blendColors = listOf(
-                    BlendColorEntry(color = Color.White.copy(alpha = 0.04f)),
+                    BlendColorEntry(
+                        color = if (glass.isDark) Color.White.copy(alpha = 0.04f) else Color.White.copy(alpha = 0.22f)
+                    ),
                 ),
             ),
         )
@@ -516,24 +800,33 @@ fun Modifier.darkNightGlassCardSurface(
         .clip(shape)
         .drawBehind {
             if (isMonospaceDark) {
-                drawRect(Color.Black.copy(alpha = 0.36f))
+                drawRect(if (glass.isDark) Color.Black.copy(alpha = 0.40f) else Color(0xDD111622))
             } else if (!hasRealBlur) {
-                // API < 31 or Blur Off translucent fallback
-                drawRect(baseBg.copy(alpha = 0.32f))
-                drawRect(
-                    brush = Brush.linearGradient(
-                        colors = listOf(Color.White.copy(alpha = 0.12f), Color.White.copy(alpha = 0.04f)),
-                        start = Offset(0f, 0f),
-                        end = Offset(size.width, size.height),
+                if (glass.isDark) {
+                    drawRect(glass.base.copy(alpha = 0.34f))
+                    drawRect(
+                        brush = Brush.linearGradient(
+                            colors = listOf(Color.White.copy(alpha = 0.12f), Color.White.copy(alpha = 0.04f)),
+                            start = Offset(0f, 0f),
+                            end = Offset(size.width, size.height),
+                        )
                     )
-                )
+                } else {
+                    drawRect(
+                        brush = Brush.linearGradient(
+                            colors = listOf(Color.White.copy(alpha = 0.78f), Color.White.copy(alpha = 0.42f)),
+                            start = Offset(0f, 0f),
+                            end = Offset(size.width, size.height),
+                        )
+                    )
+                }
             } else {
-                if (isBright) {
+                if (glass.isDark && isBright) {
                     drawRect(Color.Black.copy(alpha = 0.28f))
                 }
                 drawRect(
                     brush = Brush.linearGradient(
-                        colors = listOf(Color.White.copy(alpha = 0.13f), Color.White.copy(alpha = 0.04f)),
+                        colors = listOf(glass.fillA, glass.fillB),
                         start = Offset(0f, 0f),
                         end = Offset(size.width, size.height),
                     )
@@ -545,8 +838,8 @@ fun Modifier.darkNightGlassCardSurface(
             brush = Brush.linearGradient(
                 colorStops = arrayOf(
                     0.00f to borderTint.copy(alpha = maxBorderAlpha),
-                    0.55f to borderTint.copy(alpha = 0.07f),
-                    1.00f to borderTint.copy(alpha = 0.16f),
+                    0.55f to borderTint.copy(alpha = midBorderAlpha),
+                    1.00f to borderTint.copy(alpha = endBorderAlpha),
                 ),
                 start = Offset(0f, 0f),
                 end = Offset(480f, 480f),
@@ -555,12 +848,14 @@ fun Modifier.darkNightGlassCardSurface(
         )
         .drawWithContent {
             drawContent()
-            drawLine(
-                color = Color.White.copy(alpha = 0.12f),
-                start = Offset(size.width * 0.08f, 1.dp.toPx()),
-                end = Offset(size.width * 0.92f, 1.dp.toPx()),
-                strokeWidth = 1.dp.toPx(),
-            )
+            if (themeState.borderHighlightEnabled) {
+                drawLine(
+                    color = glass.highlight,
+                    start = Offset(size.width * 0.08f, 1.dp.toPx()),
+                    end = Offset(size.width * 0.92f, 1.dp.toPx()),
+                    strokeWidth = 1.dp.toPx(),
+                )
+            }
         }
 }
 
@@ -568,16 +863,50 @@ fun Modifier.darkNightGlassCardSurface(
 fun DarkNightGlassCard(
     palette: DarkNightPalette,
     modifier: Modifier = Modifier,
-    shape: Shape = RoundedCornerShape(20.dp),
+    shape: Shape? = null,
     isMonospaceDark: Boolean = false,
+    useBlur: Boolean = true,
     onClick: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    val themeState by DarkNightThemeStore.state.collectAsStateWithLifecycle()
+    val glass = LocalDarkNightGlass.current
+    val resolvedShape = shape ?: RoundedCornerShape(themeState.cardCornerRadiusDp.dp)
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+
+    val pressedOverlay = if (isPressed && onClick != null) {
+        if (glass.isDark) palette.secondaryGlow.copy(alpha = 0.18f)
+        else palette.primaryGlow.copy(alpha = 0.12f)
+    } else {
+        Color.Transparent
+    }
+
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .darkNightGlassCardSurface(shape = shape, isMonospaceDark = isMonospaceDark)
-            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier),
+            .darkNightGlassCardSurface(
+                shape = resolvedShape,
+                isMonospaceDark = isMonospaceDark,
+                useBlur = useBlur,
+            )
+            .then(
+                if (onClick != null) {
+                    Modifier.clickable(
+                        interactionSource = interactionSource,
+                        indication = null,
+                        onClick = onClick,
+                    )
+                } else {
+                    Modifier
+                }
+            )
+            .drawWithContent {
+                drawContent()
+                if (pressedOverlay != Color.Transparent) {
+                    drawRect(pressedOverlay)
+                }
+            },
     ) {
         Column(
             modifier = Modifier
@@ -590,7 +919,7 @@ fun DarkNightGlassCard(
 }
 
 /**
- * Pill-shaped luminous gradient CTA button matching the Zentra reference UI.
+ * Pill-shaped luminous gradient CTA button.
  */
 @Composable
 fun DarkNightGradientButton(
@@ -618,7 +947,7 @@ fun DarkNightGradientButton(
     ) {
         Text(
             text = text,
-            color = Color.White,
+            color = contrastOn(palette.buttonStart),
             fontWeight = FontWeight.SemiBold,
             fontSize = 15.sp,
         )
@@ -626,8 +955,7 @@ fun DarkNightGradientButton(
 }
 
 /**
- * First-launch Zentra-inspired animated onboarding overlay:
- * Smooth one-shot aura bloom on start -> settles static -> Next / Skip enters Manager.
+ * First-launch Zentra-inspired animated onboarding overlay.
  */
 @Composable
 fun DarkNightOnboardingOverlay(
@@ -668,7 +996,6 @@ fun DarkNightOnboardingOverlay(
                     .padding(horizontal = 24.dp, vertical = 28.dp),
                 verticalArrangement = Arrangement.Bottom,
             ) {
-                // Brand badge
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -719,7 +1046,6 @@ fun DarkNightOnboardingOverlay(
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // Page indicator pills
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     repeat(titles.size) { idx ->
                         val active = idx == step
@@ -766,10 +1092,9 @@ fun DarkNightOnboardingOverlay(
     }
 }
 
-
 /**
- * Embedded 10-Gradient Palette Picker + Aura & Startup Animation controls
- * shown directly inside the main Settings -> Theme -> Colors screen.
+ * Embedded 10-Gradient Palette Picker + Aura, Blur, Dock Style & Appearance controls
+ * shown directly inside Settings -> Theme -> Colors screen. Fully Light & Dark readable (T1).
  */
 @Composable
 fun DarkNightGradientPaletteSection(
@@ -779,6 +1104,7 @@ fun DarkNightGradientPaletteSection(
     DarkNightThemeStore.init(context)
     val themeState by DarkNightThemeStore.state.collectAsStateWithLifecycle()
     val active = themeState.palette
+    val glass = LocalDarkNightGlass.current
 
     Column(
         modifier = modifier
@@ -786,16 +1112,16 @@ fun DarkNightGradientPaletteSection(
             .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        DarkNightGlassCard(palette = active) {
+        DarkNightGlassCard(palette = active, useBlur = false) {
             Text(
                 text = "DarkNight Aura & Gradient Palettes",
-                color = Color.White,
+                color = glass.content,
                 fontWeight = FontWeight.Bold,
                 fontSize = 16.sp,
             )
             Text(
                 text = "Active: ${active.name} (${active.hexTop}) — applies across every screen",
-                color = Color.White.copy(alpha = 0.72f),
+                color = glass.contentSecondary,
                 fontSize = 12.sp,
             )
 
@@ -805,8 +1131,8 @@ fun DarkNightGradientPaletteSection(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("Global Aura & Frosted Glass", color = Color.White, fontWeight = FontWeight.Medium, fontSize = 14.sp)
-                    Text("Luminous top gradient & translucent cards everywhere", color = Color.White.copy(alpha = 0.65f), fontSize = 11.sp)
+                    Text("Global Aura & Frosted Glass", color = glass.content, fontWeight = FontWeight.Medium, fontSize = 14.sp)
+                    Text("Luminous multi-blob gradient & translucent cards", color = glass.contentSecondary, fontSize = 11.sp)
                 }
                 Switch(
                     checked = themeState.auraEnabled,
@@ -820,8 +1146,8 @@ fun DarkNightGradientPaletteSection(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("Startup Visual Animation", color = Color.White, fontWeight = FontWeight.Medium, fontSize = 14.sp)
-                    Text("Animates smoothly on launch, then settles static", color = Color.White.copy(alpha = 0.65f), fontSize = 11.sp)
+                    Text("Startup Visual Animation", color = glass.content, fontWeight = FontWeight.Medium, fontSize = 14.sp)
+                    Text("Animates smoothly on launch, then settles static", color = glass.contentSecondary, fontSize = 11.sp)
                 }
                 Switch(
                     checked = themeState.startupAnimEnabled,
@@ -829,9 +1155,9 @@ fun DarkNightGradientPaletteSection(
                 )
             }
 
-            // FIX-A7 Blur Quality & AMOLED Pure Black controls
+            // Glass Blur Quality
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text("Glass Blur Quality", color = Color.White, fontWeight = FontWeight.Medium, fontSize = 14.sp)
+                Text("Glass Blur Quality", color = glass.content, fontWeight = FontWeight.Medium, fontSize = 14.sp)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -848,10 +1174,11 @@ fun DarkNightGradientPaletteSection(
                                     DarkNightToastManager.show("Blur: ${quality.label}")
                                 },
                             shape = pillShape,
-                            color = if (activeQ) active.primaryGlow.copy(alpha = 0.28f) else Color.White.copy(alpha = 0.07f),
+                            color = if (activeQ) active.primaryGlow.copy(alpha = if (glass.isDark) 0.28f else 0.18f)
+                            else if (glass.isDark) Color.White.copy(alpha = 0.07f) else Color.White.copy(alpha = 0.55f),
                             border = BorderStroke(
                                 width = 1.dp,
-                                color = if (activeQ) active.secondaryGlow.copy(alpha = 0.55f) else active.secondaryGlow.copy(alpha = 0.16f),
+                                color = if (activeQ) active.primaryGlow.copy(alpha = 0.65f) else glass.borderLite.copy(alpha = 0.20f),
                             ),
                         ) {
                             Box(
@@ -860,7 +1187,7 @@ fun DarkNightGradientPaletteSection(
                             ) {
                                 Text(
                                     text = quality.label,
-                                    color = Color.White,
+                                    color = glass.content,
                                     fontSize = 11.sp,
                                     fontWeight = if (activeQ) FontWeight.SemiBold else FontWeight.Normal,
                                     maxLines = 1,
@@ -877,8 +1204,8 @@ fun DarkNightGradientPaletteSection(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("AMOLED Pure Black Base", color = Color.White, fontWeight = FontWeight.Medium, fontSize = 14.sp)
-                    Text("Use #000000 backdrop with softer 0.7x aura blobs", color = Color.White.copy(alpha = 0.65f), fontSize = 11.sp)
+                    Text("AMOLED Pure Black Base", color = glass.content, fontWeight = FontWeight.Medium, fontSize = 14.sp)
+                    Text("Use #000000 backdrop in Dark mode with softer blobs", color = glass.contentSecondary, fontSize = 11.sp)
                 }
                 Switch(
                     checked = themeState.amoledBlack,
@@ -886,15 +1213,50 @@ fun DarkNightGradientPaletteSection(
                 )
             }
 
-            // Phase 1 Navigation Style selector (Bottom bar Classic vs Glass Sidebar)
+            // PART 4: Card Corner Radius & Border Highlight
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text("Card Corner Radius", color = glass.content, fontWeight = FontWeight.Medium, fontSize = 14.sp)
+                    Text("${themeState.cardCornerRadiusDp}dp", color = glass.accent, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
+                }
+                Slider(
+                    value = themeState.cardCornerRadiusDp.toFloat(),
+                    onValueChange = { DarkNightThemeStore.setCardCornerRadius(context, it.roundToInt()) },
+                    valueRange = 12f..28f,
+                    colors = SliderDefaults.colors(
+                        thumbColor = active.primaryGlow,
+                        activeTrackColor = active.primaryGlow,
+                    ),
+                )
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Glass Border Highlight", color = glass.content, fontWeight = FontWeight.Medium, fontSize = 14.sp)
+                    Text("Top 1dp specular edge glint on glass cards", color = glass.contentSecondary, fontSize = 11.sp)
+                }
+                Switch(
+                    checked = themeState.borderHighlightEnabled,
+                    onCheckedChange = { DarkNightThemeStore.setBorderHighlight(context, it) },
+                )
+            }
+
+            // Navigation Style (Pill Dock vs Glass Sidebar)
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text("Navigation Style", color = Color.White, fontWeight = FontWeight.Medium, fontSize = 14.sp)
+                Text("Navigation Style", color = glass.content, fontWeight = FontWeight.Medium, fontSize = 14.sp)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     listOf(
-                        DarkNightNavStyle.BOTTOM_BAR to "Bottom bar (Classic)",
+                        DarkNightNavStyle.BOTTOM_BAR to "Bottom Pill Dock",
                         DarkNightNavStyle.GLASS_SIDEBAR to "Glass Sidebar",
                     ).forEach { (style, label) ->
                         val activeStyle = themeState.navStyle == style
@@ -908,10 +1270,11 @@ fun DarkNightGradientPaletteSection(
                                     DarkNightToastManager.show("Navigation: $label")
                                 },
                             shape = pillShape,
-                            color = if (activeStyle) active.primaryGlow.copy(alpha = 0.28f) else Color(0x880D111A),
+                            color = if (activeStyle) active.primaryGlow.copy(alpha = if (glass.isDark) 0.28f else 0.18f)
+                            else if (glass.isDark) Color(0x880D111A) else Color.White.copy(alpha = 0.62f),
                             border = BorderStroke(
                                 width = if (activeStyle) 1.5.dp else 1.dp,
-                                color = if (activeStyle) active.primaryGlow else Color.White.copy(alpha = 0.16f),
+                                color = if (activeStyle) active.primaryGlow else glass.borderLite.copy(alpha = 0.22f),
                             ),
                         ) {
                             Box(
@@ -920,7 +1283,7 @@ fun DarkNightGradientPaletteSection(
                             ) {
                                 Text(
                                     text = label,
-                                    color = Color.White,
+                                    color = glass.content,
                                     fontSize = 12.sp,
                                     fontWeight = if (activeStyle) FontWeight.SemiBold else FontWeight.Normal,
                                     maxLines = 1,
@@ -931,6 +1294,52 @@ fun DarkNightGradientPaletteSection(
                 }
             }
 
+            // PART 2: Pill Dock Style (Glass vs Dark Solid; Light mode auto uses Light Glass)
+            if (themeState.navStyle == DarkNightNavStyle.BOTTOM_BAR) {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text("Dock Style (Dark mode)", color = glass.content, fontWeight = FontWeight.Medium, fontSize = 14.sp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        DarkNightDockStyle.entries.forEach { dStyle ->
+                            val activeD = themeState.dockStyle == dStyle
+                            val pillShape = RoundedCornerShape(14.dp)
+                            Surface(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(pillShape)
+                                    .clickable {
+                                        DarkNightThemeStore.setDockStyle(context, dStyle)
+                                        DarkNightToastManager.show("Dock: ${dStyle.label}")
+                                    },
+                                shape = pillShape,
+                                color = if (activeD) active.primaryGlow.copy(alpha = if (glass.isDark) 0.28f else 0.18f)
+                                else if (glass.isDark) Color(0x880D111A) else Color.White.copy(alpha = 0.62f),
+                                border = BorderStroke(
+                                    width = if (activeD) 1.5.dp else 1.dp,
+                                    color = if (activeD) active.primaryGlow else glass.borderLite.copy(alpha = 0.22f),
+                                ),
+                            ) {
+                                Box(
+                                    modifier = Modifier.padding(vertical = 10.dp, horizontal = 8.dp),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Text(
+                                        text = dStyle.label,
+                                        color = glass.content,
+                                        fontSize = 12.sp,
+                                        fontWeight = if (activeD) FontWeight.SemiBold else FontWeight.Normal,
+                                        maxLines = 1,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 10 Gradient Palettes Grid
             DarkNightPalettes.all.chunked(2).forEach { pair ->
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -948,10 +1357,10 @@ fun DarkNightGradientPaletteSection(
                                     DarkNightToastManager.show("Applied ${pal.name}")
                                 },
                             shape = shape,
-                            color = Color(0xBB0D111A),
+                            color = if (glass.isDark) Color(0xBB0D111A) else Color.White.copy(alpha = 0.72f),
                             border = BorderStroke(
                                 width = if (isSelected) 2.dp else 1.dp,
-                                color = if (isSelected) pal.primaryGlow else Color.White.copy(alpha = 0.14f),
+                                color = if (isSelected) pal.primaryGlow else glass.borderLite.copy(alpha = 0.18f),
                             ),
                         ) {
                             Column(
@@ -987,14 +1396,14 @@ fun DarkNightGradientPaletteSection(
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(
                                             text = pal.name,
-                                            color = Color.White,
+                                            color = glass.content,
                                             fontWeight = FontWeight.SemiBold,
                                             fontSize = 12.sp,
                                             maxLines = 1,
                                         )
                                         Text(
                                             text = pal.hexTop,
-                                            color = Color.White.copy(alpha = 0.6f),
+                                            color = glass.contentSecondary,
                                             fontSize = 10.sp,
                                             maxLines = 1,
                                         )
@@ -1028,21 +1437,20 @@ fun DarkNightGradientPaletteSection(
                     DarkNightToastManager.show("Startup intro will show on next launch")
                 },
                 modifier = Modifier.fillMaxWidth(),
-                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.22f)),
+                border = BorderStroke(1.dp, glass.borderLite.copy(alpha = 0.30f)),
             ) {
-                Text("Replay Startup Intro Screen", color = Color.White)
+                Text("Replay Startup Intro Screen", color = glass.content)
             }
         }
     }
 }
 
-
-/** Shared bottom bar clearance (bottom bar height + system navigation bar + margin). */
+/** Shared bottom bar clearance (bottom dock height + system navigation bar + margin). */
 val LocalBottomBarPadding = staticCompositionLocalOf<Dp> { 0.dp }
 
 /**
  * Opaque screen wrapper for detail destinations so previous screens in the NavDisplay
- * back stack never ghost/bleed behind Theme, Theme Store, Toolbox, DarkTune, etc.
+ * back stack never ghost/bleed behind Theme, Theme Store, Toolbox, DarkTune, etc. (T7).
  */
 @Composable
 fun DarkNightScreenBackground(
@@ -1052,10 +1460,11 @@ fun DarkNightScreenBackground(
     val context = LocalContext.current
     DarkNightThemeStore.init(context)
     val state by DarkNightThemeStore.state.collectAsStateWithLifecycle()
+    val glass = LocalDarkNightGlass.current
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(state.palette.deepBase)
+            .background(glass.base)
     ) {
         if (state.auraEnabled) {
             DarkNightAuraBackdrop(
@@ -1087,23 +1496,30 @@ object DarkNightToastManager {
     }
 }
 
+/**
+ * Glass Toast positioned cleanly 12dp above Pill Dock / bottom nav bar (T9).
+ */
 @Composable
 fun DarkNightGlassToastHost(
     palette: DarkNightPalette,
     modifier: Modifier = Modifier,
 ) {
     val toast by DarkNightToastManager.current.collectAsStateWithLifecycle()
+    val glass = LocalDarkNightGlass.current
+    val themeState by DarkNightThemeStore.state.collectAsStateWithLifecycle()
     LaunchedEffect(toast?.id) {
         val id = toast?.id ?: return@LaunchedEffect
         delay(1800)
         DarkNightToastManager.dismiss(id)
     }
 
+    val bottomClearance = if (themeState.navStyle == DarkNightNavStyle.BOTTOM_BAR) 104.dp else 28.dp
+
     Box(
         modifier = modifier
             .fillMaxSize()
             .navigationBarsPadding()
-            .padding(bottom = 92.dp, start = 24.dp, end = 24.dp),
+            .padding(bottom = bottomClearance, start = 24.dp, end = 24.dp),
         contentAlignment = Alignment.BottomCenter,
     ) {
         AnimatedVisibility(
@@ -1114,7 +1530,7 @@ fun DarkNightGlassToastHost(
             toast?.let { msg ->
                 Surface(
                     shape = RoundedCornerShape(999.dp),
-                    color = Color(0xE80A0E17),
+                    color = if (glass.isDark) Color(0xE80A0E17) else Color(0xF2FFFFFF),
                     border = BorderStroke(1.dp, palette.primaryGlow.copy(alpha = 0.65f)),
                 ) {
                     Row(
@@ -1130,7 +1546,7 @@ fun DarkNightGlassToastHost(
                         )
                         Text(
                             text = msg.text,
-                            color = Color.White,
+                            color = glass.content,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Medium,
                         )

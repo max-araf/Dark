@@ -124,6 +124,12 @@ import androidx.compose.ui.graphics.Brush
 import com.kazesu.manager.ui.theme.DarkNightGlassToastHost
 import com.kazesu.manager.ui.theme.DarkNightScreenBackground
 import com.kazesu.manager.ui.component.DarkNightGlassSidebarOverlay
+import com.kazesu.manager.ui.component.DarkNightPillDock
+import com.kazesu.manager.ui.component.DarkNightSideInfoBarOverlay
+import com.kazesu.manager.ui.screen.darknight.DarkNightSideInfoBarSettingsScreen
+import com.kazesu.manager.ui.theme.LocalDarkNightGlass
+import com.kazesu.manager.ui.theme.LocalSideInfoBarPadding
+import com.kazesu.manager.ui.theme.rememberDarkNightGlassTheme
 import com.kazesu.manager.ui.theme.DarkNightNavStyle
 import com.kazesu.manager.ui.theme.DarkNightThemeStore
 import com.kazesu.manager.ui.theme.LocalNavRailPadding
@@ -248,12 +254,6 @@ class MainActivity : ComponentActivity() {
                 onDispose { }
             }
 
-            LaunchedEffect(darkMode) {
-                window.setBackgroundDrawable(
-                    android.graphics.drawable.ColorDrawable(0xFF07090F.toInt())
-                )
-            }
-
             val navigator = rememberNavigator(Route.Main)
             val context = LocalContext.current
             val uriHandler = LocalUriHandler.current
@@ -272,12 +272,28 @@ class MainActivity : ComponentActivity() {
 
             DarkNightThemeStore.init(context)
             val darkNightTheme by DarkNightThemeStore.state.collectAsStateWithLifecycle()
+            val darkNightGlass = rememberDarkNightGlassTheme(
+                palette = darkNightTheme.palette,
+                isDark = darkMode,
+                amoled = darkNightTheme.amoledBlack,
+            )
+            val sideInfoBarPadding = if (darkNightTheme.infoBarEnabled && darkNightTheme.infoBarPinned) 62.dp else 0.dp
+            var sidebarExpanded by remember { mutableStateOf(false) }
+
+            LaunchedEffect(darkNightGlass.base) {
+                window.setBackgroundDrawable(
+                    android.graphics.drawable.ColorDrawable(darkNightGlass.base.toArgb())
+                )
+            }
+
             val themedAppSettings = remember(appSettings, uiState.keyColorOverride, darkNightTheme) {
                 val accent = uiState.keyColorOverride
                     ?: if (darkNightTheme.auraEnabled) darkNightTheme.palette.primaryGlow.toArgb() else appSettings.keyColor
                 appSettings.copy(keyColor = accent)
             }
             CompositionLocalProvider(
+                LocalDarkNightGlass provides darkNightGlass,
+                LocalSideInfoBarPadding provides sideInfoBarPadding,
                 LocalUriHandler provides object : UriHandler {
                     override fun openUri(uri: String) {
                         try {
@@ -326,6 +342,7 @@ class MainActivity : ComponentActivity() {
                             initialPage = selectedMainPage,
                             pagerInterceptionMode = uiState.pagerInterceptionMode,
                             onPageChanged = viewModel::setSelectedMainPage,
+                            onSidebarExpandedChange = { sidebarExpanded = it },
                         )
                     }
 
@@ -443,6 +460,7 @@ class MainActivity : ComponentActivity() {
                                 entry<Route.Tune>(swipeDismiss = swipeDismiss) { DarkNightScreenBackground { TuneScreen() } }
                                 entry<Route.DarkNightToolbox>(swipeDismiss = swipeDismiss) { DarkNightToolboxScreen() }
                                 entry<Route.DarkNightThemeStudio>(swipeDismiss = swipeDismiss) { DarkNightThemeStudioScreen() }
+                                entry<Route.DarkNightSideInfoBarSettings>(swipeDismiss = swipeDismiss) { DarkNightScreenBackground { DarkNightSideInfoBarSettingsScreen() } }
                                 entry<Route.CpuSpoof>(swipeDismiss = swipeDismiss) { DarkNightScreenBackground { CpuSpoofScreen() } }
                                 entry<Route.VersionSpoof>(swipeDismiss = swipeDismiss) { DarkNightScreenBackground { VersionSpoofScreen() } }
                                 entry<Route.BuiltinZygisk>(swipeDismiss = swipeDismiss) { DarkNightScreenBackground { BuiltinZygiskScreen() } }
@@ -487,7 +505,7 @@ class MainActivity : ComponentActivity() {
                     }
 
                     var appContentReady by remember { mutableStateOf(false) }
-                    var splashDismissed by remember { mutableStateOf(false) }
+                    var splashDismissed by remember { mutableStateOf(DarkNightThemeStore.coldStartSplashShown) }
 
                     SideEffect {
                         if (!appContentReady) appContentReady = true
@@ -561,16 +579,31 @@ class MainActivity : ComponentActivity() {
                                 animateOnStart = darkNightTheme.startupAnimEnabled,
                                 modifier = Modifier.layerBackdrop(appBackgroundBackdrop),
                             )
+                        } else if (!hasCustomBackground) {
+                            // T7: opaque base even when Aura is OFF (zero ghosting)
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(darkNightGlass.base)
+                            )
                         }
 
                         when (uiMode) {
                             UiMode.Material -> androidx.compose.material3.Scaffold(
-                                containerColor = if (hasCustomBackground || showDarkNightAura) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer
+                                containerColor = if (hasCustomBackground || showDarkNightAura) Color.Transparent else darkNightGlass.base
                             ) { navDisplay() }
 
                             UiMode.Miuix -> Scaffold(
-                                containerColor = if (hasCustomBackground || showDarkNightAura) Color.Transparent else MiuixTheme.colorScheme.surface
+                                containerColor = if (hasCustomBackground || showDarkNightAura) Color.Transparent else darkNightGlass.base
                             ) { navDisplay() }
+                        }
+
+                        // PART 3: Right-edge Side Info Bar (hidden during splash, onboarding, or open drawer)
+                        if (splashDismissed && darkNightTheme.onboardingCompleted && !sidebarExpanded) {
+                            DarkNightSideInfoBarOverlay(
+                                backdrop = appBackgroundBackdrop.takeIf { showDarkNightAura || captureAppBackground },
+                                onOpenFullSettings = { navigator.push(Route.DarkNightSideInfoBarSettings) },
+                            )
                         }
 
                         DarkNightGlassToastHost(palette = darkNightTheme.palette)
@@ -584,7 +617,10 @@ class MainActivity : ComponentActivity() {
                         if (!splashDismissed) {
                             SplashScreen(
                                 isReady = appContentReady,
-                                onDismissed = { splashDismissed = true }
+                                onDismissed = {
+                                    DarkNightThemeStore.coldStartSplashShown = true
+                                    splashDismissed = true
+                                }
                             )
                         }
                     }
@@ -609,6 +645,7 @@ fun MainScreen(
     initialPage: Int = 0,
     pagerInterceptionMode: Int = PagerInterceptionMode.CrossAxisInterceptor.ordinal,
     onPageChanged: (Int) -> Unit = {},
+    onSidebarExpandedChange: (Boolean) -> Unit = {},
 ) {
     val navController = LocalNavigator.current
     val enableBlur = LocalEnableBlur.current
@@ -839,6 +876,7 @@ fun MainScreen(
                         onOpenThemeStudio = { navController.push(Route.ColorPalette()) },
                         onOpenSendLogs = { navController.push(Route.DarkNightToolbox) },
                         onOpenAbout = { navController.push(Route.About) },
+                        onExpandedChange = onSidebarExpandedChange,
                     )
                 }
             }
@@ -879,48 +917,48 @@ fun MainScreen(
                 }
             }
         } else {
-            val bottomBar = @Composable {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(
-                            Brush.verticalGradient(
-                                listOf(
-                                    Color.Transparent,
-                                    Color(0xD907090F),
-                                    Color(0xF207090F),
-                                )
-                            )
-                        )
-                ) {
-                    BottomBar(
-                        blurBackdrop = blurBackdrop,
-                        backdrop = backdrop,
-                        navigationBadge = navigationBadge,
-                        modifier = Modifier.align(Alignment.BottomCenter),
-                    )
-                }
+            // PART 2: Floating Pill Dock (Glass Dark / Dark Solid / auto Light Glass) + T7 140ms Crossfade
+            val navBarBottomPadding = WindowInsets.systemBars.asPaddingValues().calculateBottomPadding()
+            val dockClearance = navBarBottomPadding + 92.dp
+            val sideBarEndPad = LocalSideInfoBarPadding.current
+            val glass = LocalDarkNightGlass.current
+            val dockBackdrop = rememberLayerBackdrop {
+                drawRect(glass.base)
+                drawContent()
             }
 
-            when (uiMode) {
-                UiMode.Material -> androidx.compose.material3.Scaffold(
-                    bottomBar = bottomBar,
-                    containerColor = if (hasCustomBackground) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer
-                ) { innerPadding ->
-                    val pad = innerPadding.calculateBottomPadding() + 16.dp
-                    CompositionLocalProvider(LocalBottomBarPadding provides pad) {
-                        pagerContent(pad)
+            CompositionLocalProvider(LocalBottomBarPadding provides dockClearance) {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .layerBackdrop(dockBackdrop)
+                            .padding(end = sideBarEndPad)
+                    ) {
+                        Crossfade(
+                            targetState = mainPagerState.selectedPage,
+                            animationSpec = tween(durationMillis = 140),
+                            label = "darknight_dock_tab_crossfade",
+                        ) { page ->
+                            when (page) {
+                                0 -> HomePager(navController, dockClearance, true)
+                                1 -> SuperUserPager(navController, dockClearance, true)
+                                2 -> ModulePager(dockClearance, true)
+                                3 -> SettingPager(navController, dockClearance, true)
+                            }
+                        }
                     }
-                }
 
-                UiMode.Miuix -> Scaffold(
-                    bottomBar = bottomBar,
-                    containerColor = if (hasCustomBackground) Color.Transparent else MiuixTheme.colorScheme.surface
-                ) { innerPadding ->
-                    val pad = innerPadding.calculateBottomPadding() + 16.dp
-                    CompositionLocalProvider(LocalBottomBarPadding provides pad) {
-                        pagerContent(pad)
-                    }
+                    DarkNightPillDock(
+                        selectedPage = mainPagerState.selectedPage,
+                        moduleBadgeCount = navigationBadge.moduleEnabledCount,
+                        dockStyle = sidebarThemeState.dockStyle,
+                        blurQuality = sidebarThemeState.blurQuality,
+                        animationsEnabled = sidebarThemeState.startupAnimEnabled,
+                        backdrop = dockBackdrop,
+                        onSelectPage = { page -> mainPagerState.animateToPage(page) },
+                        modifier = Modifier.align(Alignment.BottomCenter),
+                    )
                 }
             }
         }

@@ -41,6 +41,8 @@ import androidx.compose.material.icons.rounded.Policy
 import androidx.compose.material.icons.rounded.Security
 import androidx.compose.material.icons.rounded.VerifiedUser
 import androidx.compose.runtime.Composable
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -276,6 +278,28 @@ fun SettingPagerMiuix(
                                 )
                             },
                             onClick = actions.onOpenThemeStore
+                        )
+                        val dnContext = LocalContext.current
+                        com.kazesu.manager.ui.theme.DarkNightThemeStore.init(dnContext)
+                        val dnState by com.kazesu.manager.ui.theme.DarkNightThemeStore.state.collectAsStateWithLifecycle()
+                        ArrowPreference(
+                            title = stringResource(id = R.string.darknight_infobar_title),
+                            summary = stringResource(id = R.string.darknight_infobar_summary),
+                            startAction = {
+                                Icon(
+                                    painter = androidx.compose.ui.res.painterResource(R.drawable.ic_dn_cpu),
+                                    modifier = Modifier.padding(end = 6.dp).size(22.dp),
+                                    contentDescription = stringResource(id = R.string.darknight_infobar_title),
+                                    tint = colorScheme.onBackground
+                                )
+                            },
+                            endActions = {
+                                top.yukonga.miuix.kmp.basic.Switch(
+                                    checked = dnState.infoBarEnabled,
+                                    onCheckedChange = { com.kazesu.manager.ui.theme.DarkNightThemeStore.setInfoBarEnabled(dnContext, it) },
+                                )
+                            },
+                            onClick = actions.onOpenSideInfoBar
                         )
 
                     }

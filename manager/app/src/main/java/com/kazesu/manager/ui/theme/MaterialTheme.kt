@@ -99,15 +99,26 @@ fun MaterialKernelSUTheme(
     // to the card surface roles themselves. Menu/dialog/sheet tokens stay opaque: making them
     // translucent lets their elevation shadow show through (a dark rectangular halo behind the
     // rounded popup).
-    val surfaceAwareColorScheme = remember(animatedColorScheme, hasCustomBackground, cardAlpha) {
+    val glass = LocalDarkNightGlass.current
+    val isDarkNightAura = LocalBackgroundImagePath.current == "darknight://aura"
+    val surfaceAwareColorScheme = remember(animatedColorScheme, hasCustomBackground, cardAlpha, isDarkNightAura, glass) {
         if (!hasCustomBackground) {
             animatedColorScheme
         } else {
-            animatedColorScheme.copy(
+            val base = animatedColorScheme.copy(
                 surfaceBright = animatedColorScheme.surfaceBright.copy(alpha = cardAlpha),
                 surfaceContainerLowest = animatedColorScheme.surfaceContainerLowest.copy(alpha = cardAlpha),
                 surfaceContainerHighest = animatedColorScheme.surfaceContainerHighest.copy(alpha = cardAlpha),
             )
+            if (isDarkNightAura) {
+                base.copy(
+                    onSurface = glass.content,
+                    onBackground = glass.content,
+                    onSurfaceVariant = glass.contentSecondary,
+                )
+            } else {
+                base
+            }
         }
     }
     val overlayTokens = appSettings.appearance?.colorsFor(darkTheme)

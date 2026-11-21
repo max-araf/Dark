@@ -30,6 +30,7 @@ import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -72,6 +73,7 @@ import com.kazesu.manager.R
 import com.kazesu.manager.ui.theme.DarkNightPalette
 import com.kazesu.manager.ui.theme.DarkNightPalettes
 import com.kazesu.manager.ui.theme.DarkNightToastManager
+import com.kazesu.manager.ui.theme.LocalDarkNightGlass
 import com.kazesu.manager.ui.util.getSELinuxStatusRaw
 import com.kazesu.manager.ui.util.reboot
 import top.yukonga.miuix.kmp.blur.BlendColorEntry
@@ -92,11 +94,12 @@ fun Modifier.darkNightGlass(
     palette: DarkNightPalette,
     backdrop: LayerBackdrop? = null,
 ): Modifier {
+    val glass = LocalDarkNightGlass.current
     val accent = palette.primaryGlow
     val lite = palette.secondaryGlow
     val isNeutral = palette.id == DarkNightPalettes.RoyalCharcoal.id
-    val borderTint = if (isNeutral) lerp(lite, accent, 0.4f) else lite
-    val maxBorderAlpha = if (isNeutral) 0.28f else 0.40f
+    val borderTint = if (!glass.isDark) glass.accentDark else if (isNeutral) lerp(lite, accent, 0.4f) else lite
+    val maxBorderAlpha = if (!glass.isDark) 0.28f else if (isNeutral) 0.28f else 0.40f
 
     val hasRealBlur = backdrop != null && isRenderEffectSupported()
     val alphaBoost = if (hasRealBlur) 0f else 0.15f
@@ -124,18 +127,32 @@ fun Modifier.darkNightGlass(
     return baseBlur
         .clip(shape)
         .drawBehind {
-            drawRect(
-                brush = Brush.linearGradient(
-                    colorStops = arrayOf(
-                        0.00f to Color(0xFF040710).copy(alpha = topDarkAlpha),
-                        0.26f to Color(0xFF040710).copy(alpha = midDarkAlpha),
-                        0.60f to accent.copy(alpha = accentMidAlpha),
-                        1.00f to accent.copy(alpha = accentEndAlpha),
-                    ),
-                    start = Offset(0f, 0f),
-                    end = Offset(size.width * 0.35f, size.height),
+            if (glass.isDark) {
+                drawRect(
+                    brush = Brush.linearGradient(
+                        colorStops = arrayOf(
+                            0.00f to Color(0xFF040710).copy(alpha = topDarkAlpha),
+                            0.26f to Color(0xFF040710).copy(alpha = midDarkAlpha),
+                            0.60f to accent.copy(alpha = accentMidAlpha),
+                            1.00f to accent.copy(alpha = accentEndAlpha),
+                        ),
+                        start = Offset(0f, 0f),
+                        end = Offset(size.width * 0.35f, size.height),
+                    )
                 )
-            )
+            } else {
+                drawRect(
+                    brush = Brush.linearGradient(
+                        colorStops = arrayOf(
+                            0.00f to Color.White.copy(alpha = 0.84f),
+                            0.65f to Color.White.copy(alpha = 0.68f),
+                            1.00f to accent.copy(alpha = 0.20f),
+                        ),
+                        start = Offset(0f, 0f),
+                        end = Offset(size.width * 0.35f, size.height),
+                    )
+                )
+            }
             drawRect(
                 brush = Brush.radialGradient(
                     colors = listOf(lite.copy(alpha = 0.28f), Color.Transparent),
@@ -199,9 +216,11 @@ fun DarkNightGlassSidebarOverlay(
     onOpenThemeStudio: () -> Unit,
     onOpenSendLogs: () -> Unit,
     onOpenAbout: () -> Unit,
+    onExpandedChange: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var expanded by remember { mutableStateOf(false) }
+    androidx.compose.runtime.LaunchedEffect(expanded) { onExpandedChange(expanded) }
     var showRebootDialog by remember { mutableStateOf(false) }
 
     BackHandler(enabled = expanded) {
@@ -379,12 +398,18 @@ fun DarkNightGlassSidebarOverlay(
                 }
             }
 
-            // LAYER 2: Expanded Drawer (ALWAYS requiredWidth(expandedWidth), clipped by outer container -> ZERO text reflow!)
-            val drawerAlpha = ((progress - 0.35f) / 0.65f).coerceIn(0f, 1f)
+            // LAYER 2: Expanded Drawer (T4 fix: anchor Start + unbounded so header never centers on collapse; fade out in 60ms)
+            val drawerAlpha by animateFloatAsState(
+                targetValue = if (expanded) 1f else 0f,
+                animationSpec = tween(durationMillis = if (expanded) 170 else 60),
+                label = "drawer_content_alpha",
+            )
+            val glass = LocalDarkNightGlass.current
             if (drawerAlpha > 0.01f) {
                 Column(
                     modifier = Modifier
-                        .requiredWidth(expandedWidth)
+                        .wrapContentWidth(align = Alignment.Start, unbounded = true)
+                        .width(expandedWidth)
                         .fillMaxHeight()
                         .graphicsLayer { alpha = drawerAlpha }
                         .padding(horizontal = 14.dp, vertical = 14.dp),
@@ -409,7 +434,7 @@ fun DarkNightGlassSidebarOverlay(
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = stringResource(R.string.app_name),
-                                color = Color.White,
+                                color = glass.content,
                                 fontSize = 21.sp,
                                 fontWeight = FontWeight.Bold,
                                 maxLines = 1,
@@ -418,7 +443,7 @@ fun DarkNightGlassSidebarOverlay(
                             )
                             Text(
                                 text = stringResource(R.string.darknight_subtitle),
-                                color = Color.White.copy(alpha = 0.65f),
+                                color = glass.contentSecondary,
                                 fontSize = 11.sp,
                                 maxLines = 1,
                                 softWrap = false,

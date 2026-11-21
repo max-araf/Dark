@@ -52,6 +52,7 @@ import androidx.core.graphics.drawable.toBitmap
 import com.kazesu.manager.R
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import com.kazesu.manager.ui.theme.LocalDarkNightGlass
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -118,7 +119,7 @@ fun SplashScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MiuixTheme.colorScheme.background)
+                .background(LocalDarkNightGlass.current.base)
                 .pointerInput(Unit) {}
                 .statusBarsPadding()
                 .navigationBarsPadding(),

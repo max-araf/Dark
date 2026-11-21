@@ -6,6 +6,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Date
+import java.io.ByteArrayInputStream
+import java.security.cert.CertificateFactory
+import java.security.cert.X509Certificate
 import java.util.Locale
 
 enum class PerformanceMode(val id: String, val label: String, val governor: String, val swappiness: Int) {
@@ -54,6 +57,26 @@ data class IntegrityStatus(
 data class PartitionEntry(
     val name: String,
     val blockPath: String,
+)
+
+data class KeyboxValidationResult(
+    val exists: Boolean = false,
+    val validXml: Boolean = false,
+    val certCount: Int = 0,
+    val expiredCount: Int = 0,
+    val earliestExpiry: String = "Unknown",
+    val summary: String = "Not checked",
+)
+
+data class KernelTweaksSnapshot(
+    val zramSizeMb: Int = 0,
+    val zramAlgo: String = "unknown",
+    val swappiness: Int = 60,
+    val ioBlockDev: String = "",
+    val ioCurrent: String = "unknown",
+    val ioAvailable: List<String> = emptyList(),
+    val tcpCurrent: String = "unknown",
+    val tcpAvailable: List<String> = emptyList(),
 )
 
 object DarkNightToolboxRepository {
@@ -456,5 +479,122 @@ object DarkNightToolboxRepository {
         """.trimIndent()
         val (ok, msg) = runRoot(script)
         ok to (if (ok) "Backed up to $outImg" else msg.ifEmpty { "Partition backup failed" })
+    }
+
+    // 7. TrickyStore Keybox local XML & X.509 certificate expiry validator (PART 5)
+    suspend fun validateKeyboxXml(): KeyboxValidationResult = withContext(Dispatchers.IO) {
+        val raw = readOut("cat /data/adb/tricky_store/keybox.xml 2>/dev/null")
+        if (raw.isBlank()) {
+            return@withContext KeyboxValidationResult(
+                exists = false,
+                summary = "keybox.xml not found in /data/adb/tricky_store/",
+            )
+        }
+        val hasTags = raw.contains("<AndroidAttestation") && raw.contains("<Keybox") && raw.contains("<Certificate")
+        val pemRegex = Regex(
+            "-----BEGIN CERTIFICATE-----[\\s\\S]*?-----END CERTIFICATE-----",
+            RegexOption.MULTILINE,
+        )
+        val matches = pemRegex.findAll(raw).toList()
+        if (!hasTags || matches.isEmpty()) {
+            return@withContext KeyboxValidationResult(
+                exists = true,
+                validXml = false,
+                summary = "Invalid or incomplete keybox.xml structure",
+            )
+        }
+        val cf = CertificateFactory.getInstance("X.509")
+        val now = Date()
+        var validCerts = 0
+        var expiredCerts = 0
+        var earliest: Date? = null
+        val fmt = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+
+        for (m in matches) {
+            runCatching {
+                val cert = cf.generateCertificate(
+                    ByteArrayInputStream(m.value.trim().toByteArray(Charsets.UTF_8))
+                ) as X509Certificate
+                validCerts++
+                val notAfter = cert.notAfter
+                if (notAfter.before(now)) expiredCerts++
+                if (earliest == null || notAfter.before(earliest)) earliest = notAfter
+            }
+        }
+        val expiryStr = earliest?.let { fmt.format(it) } ?: "Unknown"
+        val summary = when {
+            validCerts == 0 -> "XML found, but no readable X.509 certificates"
+            expiredCerts > 0 -> "Warning: $expiredCerts of $validCerts cert(s) expired (earliest $expiryStr)"
+            else -> "Valid keybox ($validCerts certs, expires $expiryStr)"
+        }
+        KeyboxValidationResult(
+            exists = true,
+            validXml = validCerts > 0,
+            certCount = validCerts,
+            expiredCount = expiredCerts,
+            earliestExpiry = expiryStr,
+            summary = summary,
+        )
+    }
+
+    // 8. Kernel Tweaks: ZRAM, Swappiness, I/O Scheduler, TCP Congestion (PART 5)
+    suspend fun loadKernelTweaks(): KernelTweaksSnapshot = withContext(Dispatchers.IO) {
+        val zramBytes = readOut("cat /sys/block/zram0/disksize 2>/dev/null").trim().toLongOrNull() ?: 0L
+        val zramMb = (zramBytes / (1024L * 1024L)).toInt()
+        val zramAlgoRaw = readOut("cat /sys/block/zram0/comp_algorithm 2>/dev/null").trim()
+        val zramAlgo = Regex("\\[([^\\]]+)\\]").find(zramAlgoRaw)?.groupValues?.getOrNull(1)
+            ?: zramAlgoRaw.substringBefore(" ").ifBlank { "unknown" }
+
+        val swappiness = readOut("cat /proc/sys/vm/swappiness 2>/dev/null").trim().toIntOrNull() ?: 60
+
+        val blockDev = readOut(
+            "for d in sda mmcblk0 nvme0n1; do [ -f /sys/block/${'$'}d/queue/scheduler ] && echo ${'$'}d && break; done"
+        ).trim()
+        val ioRaw = if (blockDev.isNotEmpty()) {
+            readOut("cat /sys/block/$blockDev/queue/scheduler 2>/dev/null").trim()
+        } else ""
+        val ioCurrent = Regex("\\[([^\\]]+)\\]").find(ioRaw)?.groupValues?.getOrNull(1) ?: "unknown"
+        val ioAvailable = ioRaw.split(Regex("\\s+"))
+            .map { it.trim('[', ']') }
+            .filter { it.isNotBlank() }
+
+        val tcpCurrent = readOut("cat /proc/sys/net/ipv4/tcp_congestion_control 2>/dev/null").trim().ifBlank { "unknown" }
+        val tcpAvailable = readOut("cat /proc/sys/net/ipv4/tcp_available_congestion_control 2>/dev/null")
+            .trim()
+            .split(Regex("\\s+"))
+            .filter { it.isNotBlank() }
+
+        KernelTweaksSnapshot(
+            zramSizeMb = zramMb,
+            zramAlgo = zramAlgo,
+            swappiness = swappiness,
+            ioBlockDev = blockDev,
+            ioCurrent = ioCurrent,
+            ioAvailable = ioAvailable,
+            tcpCurrent = tcpCurrent,
+            tcpAvailable = tcpAvailable,
+        )
+    }
+
+    suspend fun applySwappiness(value: Int): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        val safe = value.coerceIn(0, 200)
+        val (ok, msg) = runRoot("echo $safe > /proc/sys/vm/swappiness")
+        ok to (if (ok) "Swappiness set to $safe" else msg.ifEmpty { "Failed to set swappiness" })
+    }
+
+    suspend fun applyIoScheduler(blockDev: String, scheduler: String): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        if (!blockDev.matches(Regex("^[a-z0-9_]+$")) || !scheduler.matches(Regex("^[a-zA-Z0-9_-]+$"))) {
+            return@withContext false to "Invalid scheduler parameter"
+        }
+        val (ok, msg) = runRoot("echo ${scheduler.shellQuote()} > /sys/block/$blockDev/queue/scheduler")
+        ok to (if (ok) "I/O scheduler set to $scheduler" else msg.ifEmpty { "Failed to set I/O scheduler" })
+    }
+
+    suspend fun applyTcpCongestion(algo: String): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        if (!algo.matches(Regex("^[a-zA-Z0-9_-]+$"))) {
+            return@withContext false to "Invalid TCP algorithm"
+        }
+        val (ok, msg) = runRoot("echo ${algo.shellQuote()} > /proc/sys/net/ipv4/tcp_congestion_control")
+        ok to (if (ok) "TCP congestion set to $algo" else msg.ifEmpty { "Failed to set TCP congestion" })
     }
 }

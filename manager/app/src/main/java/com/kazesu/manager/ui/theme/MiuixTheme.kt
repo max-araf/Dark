@@ -82,6 +82,8 @@ fun MiuixKernelSUTheme(
             }
             val baseColors = MiuixTheme.colorScheme
             val hasCustomBackground = LocalBackgroundImagePath.current.isNotEmpty()
+            val glass = LocalDarkNightGlass.current
+            val isDarkNightAura = LocalBackgroundImagePath.current == "darknight://aura"
             // Miuix mutes disabled text to ~38% alpha. Over a translucent card on top of a
             // custom background that is barely legible, so keep the disabled look but raise
             // the contrast.
@@ -89,7 +91,17 @@ fun MiuixKernelSUTheme(
             // Always hand a fresh Colors instance to the nested theme. MiuixTheme() copies into
             // a remembered Colors object and a remembered snapshot here would keep the palette
             // from before a light/dark, key color or monet change (until the app is restarted).
-            val readableColors = if (hasCustomBackground) {
+            val readableColors = if (isDarkNightAura) {
+                baseColors.copy(
+                    onSurface = glass.content,
+                    onBackground = glass.content,
+                    onSurfaceVariantSummary = glass.contentSecondary,
+                    onSurfaceSecondary = glass.contentSecondary,
+                    disabledOnSurface = glass.content.copy(alpha = 0.72f),
+                    disabledOnSecondary = glass.content.copy(alpha = 0.72f),
+                    disabledOnSecondaryVariant = glass.content.copy(alpha = 0.72f),
+                )
+            } else if (hasCustomBackground) {
                 baseColors.copy(
                     disabledOnSurface = baseColors.onSurface.copy(alpha = 0.85f),
                     disabledOnSecondary = baseColors.onSecondary.copy(alpha = 0.85f),
