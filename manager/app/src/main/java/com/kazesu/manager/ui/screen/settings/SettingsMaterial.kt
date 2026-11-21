@@ -52,6 +52,7 @@ import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.size
@@ -234,8 +235,8 @@ fun SettingPagerMaterial(
                                 )
                             }
                         )
-                    },
-                    {
+                    }
+                    add {
                         val dnContext = LocalContext.current
                         com.kazesu.manager.ui.theme.DarkNightThemeStore.init(dnContext)
                         val dnState by com.kazesu.manager.ui.theme.DarkNightThemeStore.state.collectAsStateWithLifecycle()
