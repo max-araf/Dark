@@ -10,10 +10,11 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -523,9 +524,9 @@ private fun InactiveStatusCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(min = 188.dp)
-                .padding(22.dp),
-            verticalArrangement = Arrangement.SpaceBetween,
+                .then(if (isLimitedMode) Modifier else Modifier.heightIn(min = 188.dp))
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -560,7 +561,11 @@ private fun InactiveStatusCard(
                 fontWeight = FontWeight.Bold,
             )
             if (isLimitedMode) {
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                @OptIn(ExperimentalLayoutApi::class)
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
                     TextButton(
                         text = stringResource(R.string.home_how_to_integrate_kernel),
                         onClick = { actions.onOpenUrl(DarkNightLinks.KERNEL_INTEGRATION_GUIDE_URL) },

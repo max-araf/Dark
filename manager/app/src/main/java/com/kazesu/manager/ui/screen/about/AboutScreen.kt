@@ -1,5 +1,7 @@
 package com.kazesu.manager.ui.screen.about
 
+import com.kazesu.manager.ui.theme.DarkNightLinks
+
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialExpressiveTheme
 import androidx.compose.material3.MotionScheme
@@ -38,7 +40,7 @@ fun AboutScreen() {
     val htmlString = stringResource(
         id = R.string.about_source_code,
         "<b><a href=\"https://github.com/max-araf/DarkNightSu\">GitHub</a></b>",
-        "<b><a href=\"https://t.me/KazeKSU\">Telegram</a></b>",
+        if (DarkNightLinks.SHOW_TELEGRAM_LINK && DarkNightLinks.TELEGRAM_URL.isNotBlank()) "<b><a href=\"${DarkNightLinks.TELEGRAM_URL}\">Telegram</a></b>" else "",
     )
     val state = AboutUiState(
         title = customText(CustomTextKey.PAGE_ABOUT),

@@ -68,35 +68,34 @@ private fun TuneHeroCardMaterial(
         onClick = onClick,
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
-            Box(
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .then(if (locked) Modifier.alpha(0.45f) else Modifier),
+                    .then(if (locked) Modifier.alpha(0.45f) else Modifier)
+                    .padding(horizontal = 20.dp, vertical = 16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 16.dp),
-                ) {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = stringResource(R.string.kernel_tuning),
-                        fontSize = 22.sp,
+                        fontSize = 20.sp,
                         fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
                     )
                     Spacer(Modifier.height(2.dp))
                     Text(
                         text = stringResource(R.string.kernel_tuning_tagline),
-                        fontSize = 15.sp,
+                        fontSize = 14.sp,
+                        maxLines = 2,
                     )
                 }
                 Image(
                     painter = painterResource(R.drawable.ic_launcher_darknight_full),
                     contentDescription = null,
                     modifier = Modifier
-                        .align(Alignment.CenterEnd)
-                        .padding(end = 16.dp)
-                        .size(56.dp)
-                        .clip(RoundedCornerShape(16.dp)),
+                        .size(44.dp)
+                        .clip(RoundedCornerShape(13.dp)),
                 )
             }
             if (locked) {
@@ -113,37 +112,40 @@ private fun TuneHeroCardMiuix(
     locked: Boolean,
 ) {
     AppCard(modifier = modifier.fillMaxWidth()) {
-        Box(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable(onClick = onClick)
                 .padding(horizontal = 20.dp, vertical = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Column(
                 modifier = Modifier
-                    .fillMaxWidth()
+                    .weight(1f)
                     .then(if (locked) Modifier.alpha(0.45f) else Modifier),
                 verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
                 MiuixText(
                     text = stringResource(R.string.kernel_tuning),
-                    fontSize = 22.sp,
+                    fontSize = 20.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = colorScheme.onSurface,
+                    maxLines = 1,
                 )
                 MiuixText(
                     text = stringResource(R.string.kernel_tuning_tagline),
-                    fontSize = 14.sp,
+                    fontSize = 13.sp,
                     color = colorScheme.onSurfaceVariantSummary,
+                    maxLines = 2,
                 )
             }
             Image(
                 painter = painterResource(R.drawable.ic_launcher_darknight_full),
                 contentDescription = null,
                 modifier = Modifier
-                    .align(Alignment.CenterEnd)
-                    .size(54.dp)
-                    .clip(RoundedCornerShape(16.dp)),
+                    .size(44.dp)
+                    .clip(RoundedCornerShape(13.dp)),
             )
         }
         if (locked) {

@@ -1,5 +1,10 @@
 package com.kazesu.manager.ui.screen.about
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.layout.ContentScale
+import com.kazesu.manager.ui.theme.DarkNightLinks
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -96,11 +101,13 @@ fun AboutScreenMaterial(
                         // The hero shows the KazeSU leaf mark itself. The launcher icon depends on
                         // the selected app-icon pack, which made the about page advertise whichever
                         // icon was active instead of the brand.
-                        Icon(
-                            painter = painterResource(R.drawable.ic_kazesu_leaf),
-                            contentDescription = null,
-                            modifier = Modifier.size(96.dp),
-                            tint = LocalContentColor.current,
+                        Image(
+                            painter = painterResource(R.drawable.ic_launcher_darknight_full),
+                            contentDescription = state.appName,
+                            modifier = Modifier
+                                .size(84.dp)
+                                .clip(RoundedCornerShape(22.dp)),
+                            contentScale = ContentScale.Crop,
                         )
                         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             Text(
@@ -153,7 +160,7 @@ fun AboutScreenMaterial(
             item {
                 SegmentedColumn(
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                    content = state.links.map { linkInfo ->
+                    content = state.links.filter { it.url.isNotBlank() && it.fullText.isNotBlank() }.map { linkInfo ->
                         {
                             SegmentedListItem(
                                 onClick = { actions.onOpenLink(linkInfo.url) },
@@ -163,7 +170,7 @@ fun AboutScreenMaterial(
                     }
                 )
             }
-            if (contributors.isNotEmpty()) {
+            if (DarkNightLinks.SHOW_UPSTREAM_CONTRIBUTORS && contributors.isNotEmpty()) {
                 item {
                     Row(
                         modifier = Modifier.padding(start = 28.dp, end = 28.dp, top = 16.dp, bottom = 4.dp),

@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -163,12 +164,13 @@ fun DarkNightToolboxScreen() {
                     .padding(horizontal = 12.dp, vertical = 6.dp),
                 shape = RoundedCornerShape(999.dp),
                 color = Color(0xCC0D1017),
-                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.14f)),
+                border = BorderStroke(1.dp, palette.secondaryGlow.copy(alpha = 0.28f)),
             ) {
+                Box(modifier = Modifier.fillMaxWidth()) {
                 Row(
                     modifier = Modifier
                         .horizontalScroll(tabScrollState)
-                        .padding(horizontal = 12.dp, vertical = 4.dp),
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     tabs.forEachIndexed { index, title ->
@@ -199,6 +201,22 @@ fun DarkNightToolboxScreen() {
                             )
                         }
                     }
+                }
+                // Left & right 16dp fade-edge masks (FIX-D9)
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.CenterStart)
+                        .width(16.dp)
+                        .height(42.dp)
+                        .background(Brush.horizontalGradient(listOf(Color(0xEE0D1017), Color.Transparent)))
+                )
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.CenterEnd)
+                        .width(16.dp)
+                        .height(42.dp)
+                        .background(Brush.horizontalGradient(listOf(Color.Transparent, Color(0xEE0D1017))))
+                )
                 }
             }
 

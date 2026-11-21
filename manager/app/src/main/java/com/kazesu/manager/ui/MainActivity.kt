@@ -11,10 +11,12 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.annotation.RequiresApi
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Color
@@ -782,9 +784,10 @@ fun MainScreen(
                 drawRect(sidebarThemeState.palette.deepBase)
                 drawContent()
             }
+            val sidebarBottomPad = navBarBottomPadding + 28.dp
             CompositionLocalProvider(
                 LocalNavRailPadding provides 80.dp,
-                LocalBottomBarPadding provides (navBarBottomPadding + 16.dp),
+                LocalBottomBarPadding provides sidebarBottomPad,
             ) {
                 Box(modifier = Modifier.fillMaxSize()) {
                     Box(
@@ -793,8 +796,36 @@ fun MainScreen(
                             .layerBackdrop(sidebarBackdrop)
                             .padding(start = 80.dp)
                     ) {
-                        pagerContent(navBarBottomPadding + 16.dp)
+                        // Pure 140ms Crossfade tab switch (zero half-slide ghosting!)
+                        Crossfade(
+                            targetState = mainPagerState.selectedPage,
+                            animationSpec = tween(durationMillis = 140),
+                            label = "darknight_tab_crossfade",
+                        ) { page ->
+                            when (page) {
+                                0 -> HomePager(navController, sidebarBottomPad, true)
+                                1 -> SuperUserPager(navController, sidebarBottomPad, true)
+                                2 -> ModulePager(sidebarBottomPad, true)
+                                3 -> SettingPager(navController, sidebarBottomPad, true)
+                            }
+                        }
                     }
+
+                    // Bottom 3-button system nav gradient scrim (FIX-D1)
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .fillMaxWidth()
+                            .height(navBarBottomPadding + 24.dp)
+                            .background(
+                                Brush.verticalGradient(
+                                    listOf(
+                                        Color.Transparent,
+                                        sidebarThemeState.palette.deepBase.copy(alpha = 0.85f),
+                                    )
+                                )
+                            )
+                    )
 
                     DarkNightGlassSidebarOverlay(
                         palette = sidebarThemeState.palette,

@@ -49,6 +49,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import top.yukonga.miuix.kmp.shader.isRenderEffectSupported
 import top.yukonga.miuix.kmp.blur.textureBlur
 import top.yukonga.miuix.kmp.blur.BlurColors
@@ -651,7 +652,12 @@ fun DarkNightOnboardingOverlay(
             "Switch between 10 aura gradient palettes or explore & upload themes in the online Theme Store.",
         )
 
-        Box(modifier = Modifier.fillMaxSize()) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(palette.deepBase.copy(alpha = 0.98f))
+                .pointerInput(Unit) {}
+        ) {
             DarkNightAuraBackdrop(palette = palette, animateOnStart = true)
 
             Column(

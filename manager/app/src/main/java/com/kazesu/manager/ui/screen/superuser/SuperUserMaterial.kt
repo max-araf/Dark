@@ -68,6 +68,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -184,7 +185,7 @@ fun SuperUserPagerMaterial(
                 navigationIcon = {
                     IconButton(onClick = actions.onOpenSulog) {
                         Icon(
-                            imageVector = Icons.AutoMirrored.Outlined.Article,
+                            painter = painterResource(R.drawable.ic_dn_logs),
                             contentDescription = stringResource(R.string.settings_sulog)
                         )
                     }
