@@ -286,6 +286,11 @@ class MainActivity : ComponentActivity() {
                 )
             }
 
+            // B11: One-time cleanup of legacy Toolbox bootloop guard scripts
+            LaunchedEffect(Unit) {
+                com.kazesu.manager.ui.screen.darknight.DarkNightToolboxRepository.migrateLegacyBootloopGuard(context)
+            }
+
             val themedAppSettings = remember(appSettings, uiState.keyColorOverride, darkNightTheme) {
                 val accent = uiState.keyColorOverride
                     ?: if (darkNightTheme.auraEnabled) darkNightTheme.palette.primaryGlow.toArgb() else appSettings.keyColor
@@ -858,7 +863,7 @@ fun MainScreen(
                                 Brush.verticalGradient(
                                     listOf(
                                         Color.Transparent,
-                                        sidebarThemeState.palette.deepBase.copy(alpha = 0.85f),
+                                        LocalDarkNightGlass.current.base.copy(alpha = 0.85f),
                                     )
                                 )
                             )
@@ -955,7 +960,7 @@ fun MainScreen(
                         dockStyle = sidebarThemeState.dockStyle,
                         blurQuality = sidebarThemeState.blurQuality,
                         animationsEnabled = sidebarThemeState.startupAnimEnabled,
-                        backdrop = dockBackdrop,
+                        backdrop = LocalAppBackgroundBackdrop.current ?: dockBackdrop,
                         onSelectPage = { page -> mainPagerState.animateToPage(page) },
                         modifier = Modifier.align(Alignment.BottomCenter),
                     )

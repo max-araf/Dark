@@ -73,7 +73,11 @@ import com.kazesu.manager.R
 import com.kazesu.manager.ui.theme.DarkNightPalette
 import com.kazesu.manager.ui.theme.DarkNightPalettes
 import com.kazesu.manager.ui.theme.DarkNightToastManager
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.kazesu.manager.ui.theme.DarkNightThemeStore
 import com.kazesu.manager.ui.theme.LocalDarkNightGlass
+import com.kazesu.manager.ui.theme.contrastOn
 import com.kazesu.manager.ui.util.getSELinuxStatusRaw
 import com.kazesu.manager.ui.util.reboot
 import top.yukonga.miuix.kmp.blur.BlendColorEntry
@@ -101,6 +105,20 @@ fun Modifier.darkNightGlass(
     val borderTint = if (!glass.isDark) glass.accentDark else if (isNeutral) lerp(lite, accent, 0.4f) else lite
     val maxBorderAlpha = if (!glass.isDark) 0.28f else if (isNeutral) 0.28f else 0.40f
 
+    val navCtx = LocalContext.current
+    DarkNightThemeStore.init(navCtx)
+    val navDnState by DarkNightThemeStore.state.collectAsStateWithLifecycle()
+    if (!navDnState.glassOn) {
+        val solidBg = if (glass.isDark) {
+            if (navDnState.amoledBlack) Color.Black else Color(0xFF0E1424)
+        } else {
+            Color.White
+        }
+        return this
+            .clip(shape)
+            .background(solidBg)
+            .border(1.dp, glass.accent.copy(alpha = 0.25f), shape)
+    }
     val hasRealBlur = backdrop != null && isRenderEffectSupported()
     val alphaBoost = if (hasRealBlur) 0f else 0.15f
     val isBrightAccent = accent.luminance() > 0.45f
@@ -144,8 +162,8 @@ fun Modifier.darkNightGlass(
                 drawRect(
                     brush = Brush.linearGradient(
                         colorStops = arrayOf(
-                            0.00f to Color.White.copy(alpha = 0.84f),
-                            0.65f to Color.White.copy(alpha = 0.68f),
+                            0.00f to Color.White.copy(alpha = 0.80f),
+                            0.60f to Color.White.copy(alpha = 0.46f),
                             1.00f to accent.copy(alpha = 0.20f),
                         ),
                         start = Offset(0f, 0f),
@@ -465,7 +483,7 @@ fun DarkNightGlassSidebarOverlay(
                     ) {
                         Text(
                             text = stringResource(R.string.darknight_nav_section_menu),
-                            color = Color.White.copy(alpha = 0.50f),
+                            color = LocalDarkNightGlass.current.content.copy(alpha = 0.50f),
                             fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold,
                             letterSpacing = 1.6.sp,
@@ -494,7 +512,7 @@ fun DarkNightGlassSidebarOverlay(
 
                         Text(
                             text = stringResource(R.string.darknight_nav_section_system),
-                            color = Color.White.copy(alpha = 0.50f),
+                            color = LocalDarkNightGlass.current.content.copy(alpha = 0.50f),
                             fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold,
                             letterSpacing = 1.6.sp,
@@ -546,12 +564,12 @@ fun DarkNightGlassSidebarOverlay(
                                     .border(1.dp, palette.secondaryGlow.copy(alpha = 0.55f), CircleShape),
                                 contentAlignment = Alignment.Center,
                             ) {
-                                Text("#", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                                Text("#", color = contrastOn(palette.primaryGlow), fontWeight = FontWeight.Bold, fontSize = 16.sp)
                             }
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     text = deviceModel,
-                                    color = Color.White,
+                                    color = LocalDarkNightGlass.current.content,
                                     fontWeight = FontWeight.SemiBold,
                                     fontSize = 13.sp,
                                     maxLines = 1,
@@ -560,7 +578,7 @@ fun DarkNightGlassSidebarOverlay(
                                 )
                                 Text(
                                     text = "Kernel $kernelRelease • SELinux $selinuxLabel",
-                                    color = Color.White.copy(alpha = 0.62f),
+                                    color = LocalDarkNightGlass.current.contentSecondary,
                                     fontSize = 10.sp,
                                     maxLines = 1,
                                     softWrap = false,
@@ -570,7 +588,7 @@ fun DarkNightGlassSidebarOverlay(
                             Icon(
                                 painter = painterResource(R.drawable.ic_dn_chevron),
                                 contentDescription = null,
-                                tint = Color.White.copy(alpha = 0.65f),
+                                tint = LocalDarkNightGlass.current.contentSecondary,
                                 modifier = Modifier.size(18.dp),
                             )
                         }
@@ -657,7 +675,7 @@ private fun RailIconButton(
                         Modifier
                             .background(
                                 Brush.verticalGradient(
-                                    listOf(Color.White.copy(alpha = 0.22f), Color.White.copy(alpha = 0.06f))
+                                    listOf(palette.primaryGlow, lerp(palette.primaryGlow, Color.White, 0.30f))
                                 )
                             )
                             .drawWithContent {
@@ -680,7 +698,7 @@ private fun RailIconButton(
                 Icon(
                     painter = painterResource(item.iconRes),
                     contentDescription = stringResource(item.labelRes),
-                    tint = if (selected) Color.White else Color.White.copy(alpha = 0.68f),
+                    tint = if (selected) contrastOn(palette.primaryGlow) else LocalDarkNightGlass.current.content.copy(alpha = 0.72f),
                     modifier = Modifier.size(22.dp),
                 )
                 if (item.badgeCount > 0) {
@@ -753,7 +771,7 @@ private fun DrawerMenuRow(
                         Modifier
                             .background(
                                 Brush.horizontalGradient(
-                                    listOf(Color.White.copy(alpha = 0.22f), Color.White.copy(alpha = 0.06f))
+                                    listOf(palette.primaryGlow, lerp(palette.primaryGlow, Color.White, 0.30f))
                                 )
                             )
                             .drawWithContent {
@@ -776,13 +794,13 @@ private fun DrawerMenuRow(
             Icon(
                 painter = painterResource(item.iconRes),
                 contentDescription = null,
-                tint = if (selected) Color.White else Color.White.copy(alpha = 0.68f),
+                tint = if (selected) contrastOn(palette.primaryGlow) else LocalDarkNightGlass.current.content.copy(alpha = 0.72f),
                 modifier = Modifier.size(22.dp),
             )
             Spacer(modifier = Modifier.width(14.dp))
             Text(
                 text = stringResource(item.labelRes),
-                color = if (selected) Color.White else Color.White.copy(alpha = 0.88f),
+                color = if (selected) contrastOn(palette.primaryGlow) else LocalDarkNightGlass.current.content.copy(alpha = 0.90f),
                 fontSize = 15.sp,
                 fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
                 maxLines = 1,
@@ -794,7 +812,7 @@ private fun DrawerMenuRow(
                 Icon(
                     painter = painterResource(R.drawable.ic_dn_chevron),
                     contentDescription = null,
-                    tint = Color.White.copy(alpha = 0.85f),
+                    tint = LocalDarkNightGlass.current.content.copy(alpha = 0.78f),
                     modifier = Modifier.size(18.dp),
                 )
             } else if (item.badgeCount > 0) {
@@ -832,7 +850,7 @@ private fun GlassDivider(
             .height(1.dp)
             .background(
                 Brush.horizontalGradient(
-                    listOf(Color.Transparent, Color.White.copy(alpha = 0.22f), Color.Transparent)
+                    listOf(Color.Transparent, LocalDarkNightGlass.current.content.copy(alpha = 0.16f), Color.Transparent)
                 )
             )
     )

@@ -192,7 +192,7 @@ fun DarkNightSideInfoBarOverlay(
         ) {
             val pillShape = RoundedCornerShape(topStart = 29.dp, bottomStart = 29.dp)
             val baseAlpha = (if (glass.isDark) 0.88f else 0.82f) * (state.infoBarOpacityPercent / 100f)
-            val hasRealBlur = state.blurQuality != DarkNightBlurQuality.OFF &&
+            val hasRealBlur = state.glassOn &&
                 backdrop != null &&
                 isRenderEffectSupported()
 

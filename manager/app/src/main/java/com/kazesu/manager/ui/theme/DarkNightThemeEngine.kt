@@ -38,7 +38,8 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
+import com.kazesu.manager.ui.component.DarkNightSlider
+import com.kazesu.manager.ui.component.DarkNightSwitch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -257,7 +258,7 @@ enum class DarkNightNavStyle(val id: String) {
 
 enum class DarkNightDockStyle(val id: String, val label: String) {
     GLASS("glass", "Glass"),
-    DARK_SOLID("dark_solid", "Dark Solid");
+    DARK_SOLID("dark_solid", "Solid");
 
     companion object {
         fun byId(id: String?): DarkNightDockStyle = entries.firstOrNull { it.id == id } ?: GLASS
@@ -368,7 +369,11 @@ data class DarkNightThemeState(
     // PART 4: Appearance sliders
     val cardCornerRadiusDp: Int = 20,
     val borderHighlightEnabled: Boolean = true,
-)
+    val blurRadiusDp: Float = 18f,
+    val glassStrength: Float = 1.0f,
+) {
+    val glassOn: Boolean get() = auraEnabled && blurQuality != DarkNightBlurQuality.OFF
+}
 
 object DarkNightThemeStore {
     private const val PREFS_NAME = "darknight_theme_prefs"
@@ -391,6 +396,8 @@ object DarkNightThemeStore {
     private const val KEY_INFOBAR_VPOS = "infobar_vertical_pct"
     private const val KEY_CARD_CORNER_DP = "card_corner_dp"
     private const val KEY_BORDER_HIGHLIGHT = "border_highlight_enabled"
+    private const val KEY_BLUR_RADIUS_DP = "blur_radius_dp"
+    private const val KEY_GLASS_STRENGTH = "glass_strength"
 
     /** Process-level flag so SplashScreen only plays on cold start, never on theme/UI-style change (T3). */
     @Volatile
@@ -427,6 +434,8 @@ object DarkNightThemeStore {
                 infoBarVerticalPercent = prefs.getInt(KEY_INFOBAR_VPOS, 30).coerceIn(15, 70),
                 cardCornerRadiusDp = prefs.getInt(KEY_CARD_CORNER_DP, 20).coerceIn(12, 28),
                 borderHighlightEnabled = prefs.getBoolean(KEY_BORDER_HIGHLIGHT, true),
+                blurRadiusDp = prefs.getFloat(KEY_BLUR_RADIUS_DP, 18f).coerceIn(0f, 40f),
+                glassStrength = prefs.getFloat(KEY_GLASS_STRENGTH, 1.0f).coerceIn(0.3f, 2.0f),
             )
             initialized = true
         }
@@ -579,6 +588,20 @@ object DarkNightThemeStore {
         _state.value = _state.value.copy(borderHighlightEnabled = enabled)
     }
 
+    fun setBlurRadiusDp(context: Context, radiusDp: Float) {
+        init(context)
+        val clamped = radiusDp.coerceIn(0f, 40f)
+        prefs(context).edit().putFloat(KEY_BLUR_RADIUS_DP, clamped).apply()
+        _state.value = _state.value.copy(blurRadiusDp = clamped)
+    }
+
+    fun setGlassStrength(context: Context, strength: Float) {
+        init(context)
+        val clamped = strength.coerceIn(0.3f, 2.0f)
+        prefs(context).edit().putFloat(KEY_GLASS_STRENGTH, clamped).apply()
+        _state.value = _state.value.copy(glassStrength = clamped)
+    }
+
     fun activeKeyColorArgb(): Int = _state.value.palette.primaryGlow.toArgb()
 }
 
@@ -694,14 +717,14 @@ fun DarkNightAuraBackdrop(
                 )
             )
         } else {
-            // Light Glass pastel blobs: accent 34% / 26%, soft violet 16%, sky 24%
+            // Light Glass pastel blobs (+10% saturation/alpha for rich Light glass & dock refraction, B7)
             val softViolet = Color(0xFF7C5CFF)
             val softSky = Color(0xFF4EA8FF)
             drawRect(
                 brush = Brush.radialGradient(
                     colors = listOf(
-                        accent.copy(alpha = 0.34f * p),
-                        accent.copy(alpha = 0.12f * p),
+                        accent.copy(alpha = 0.44f * p),
+                        accent.copy(alpha = 0.18f * p),
                         Color.Transparent,
                     ),
                     center = Offset(w * 0.22f, h * 0.08f),
@@ -711,7 +734,7 @@ fun DarkNightAuraBackdrop(
             drawRect(
                 brush = Brush.radialGradient(
                     colors = listOf(
-                        softSky.copy(alpha = 0.24f * p),
+                        softSky.copy(alpha = 0.34f * p),
                         Color.Transparent,
                     ),
                     center = Offset(w * 0.85f, h * 0.12f),
@@ -721,7 +744,7 @@ fun DarkNightAuraBackdrop(
             drawRect(
                 brush = Brush.radialGradient(
                     colors = listOf(
-                        softViolet.copy(alpha = 0.16f * p),
+                        softViolet.copy(alpha = 0.26f * p),
                         Color.Transparent,
                     ),
                     center = Offset(w * 0.88f, h * 0.50f),
@@ -731,7 +754,7 @@ fun DarkNightAuraBackdrop(
             drawRect(
                 brush = Brush.radialGradient(
                     colors = listOf(
-                        accent.copy(alpha = 0.26f * p),
+                        accent.copy(alpha = 0.36f * p),
                         Color.Transparent,
                     ),
                     center = Offset(w * 0.18f, h * 0.86f),
@@ -759,10 +782,17 @@ fun Modifier.darkNightGlassCardSurface(
     val glass = LocalDarkNightGlass.current
     val backdrop = LocalAppBackgroundBackdrop.current
     val blurQuality = themeState.blurQuality
+    val effectiveBlurRadius = when (blurQuality) {
+        DarkNightBlurQuality.OFF -> 0f
+        DarkNightBlurQuality.LOW -> (themeState.blurRadiusDp * 0.55f).coerceAtLeast(6f)
+        DarkNightBlurQuality.HIGH -> themeState.blurRadiusDp
+    }
     val hasRealBlur = useBlur &&
-        blurQuality != DarkNightBlurQuality.OFF &&
+        themeState.auraEnabled &&
+        effectiveBlurRadius > 0.5f &&
         backdrop != null &&
         isRenderEffectSupported()
+    val strength = themeState.glassStrength
 
     val isNeutral = palette.id == DarkNightPalettes.RoyalCharcoal.id
     val isBright = palette.primaryGlow.luminance() > 0.45f
@@ -779,15 +809,29 @@ fun Modifier.darkNightGlassCardSurface(
     val midBorderAlpha = if (glass.isDark) 0.07f else 0.06f
     val endBorderAlpha = if (glass.isDark) 0.16f else 0.14f
 
+    // B6: When Global Aura is OFF, render clean flat solid (no blur, no glass sheen)
+    if (!themeState.auraEnabled && !isMonospaceDark) {
+        val solidBg = if (glass.isDark) {
+            if (themeState.amoledBlack) Color.Black else Color(0xFF0E1424)
+        } else {
+            Color.White
+        }
+        return this
+            .clip(shape)
+            .background(solidBg)
+            .border(1.dp, glass.accent.copy(alpha = 0.25f), shape)
+    }
+
     val blurMod = if (hasRealBlur && backdrop != null) {
         this.textureBlur(
             backdrop = backdrop,
             shape = shape,
-            blurRadius = blurQuality.radius,
+            blurRadius = effectiveBlurRadius,
             colors = BlurColors(
                 blendColors = listOf(
                     BlendColorEntry(
-                        color = if (glass.isDark) Color.White.copy(alpha = 0.04f) else Color.White.copy(alpha = 0.22f)
+                        color = if (glass.isDark) Color.White.copy(alpha = (0.04f * strength).coerceAtMost(0.18f))
+                        else Color.White.copy(alpha = (0.22f * strength).coerceAtMost(0.42f))
                     ),
                 ),
             ),
@@ -803,10 +847,13 @@ fun Modifier.darkNightGlassCardSurface(
                 drawRect(if (glass.isDark) Color.Black.copy(alpha = 0.40f) else Color(0xDD111622))
             } else if (!hasRealBlur) {
                 if (glass.isDark) {
-                    drawRect(glass.base.copy(alpha = 0.34f))
+                    drawRect(glass.base.copy(alpha = 0.62f))
                     drawRect(
                         brush = Brush.linearGradient(
-                            colors = listOf(Color.White.copy(alpha = 0.12f), Color.White.copy(alpha = 0.04f)),
+                            colors = listOf(
+                                Color.White.copy(alpha = (0.14f * strength).coerceAtMost(0.30f)),
+                                Color.White.copy(alpha = (0.05f * strength).coerceAtMost(0.14f)),
+                            ),
                             start = Offset(0f, 0f),
                             end = Offset(size.width, size.height),
                         )
@@ -814,7 +861,10 @@ fun Modifier.darkNightGlassCardSurface(
                 } else {
                     drawRect(
                         brush = Brush.linearGradient(
-                            colors = listOf(Color.White.copy(alpha = 0.78f), Color.White.copy(alpha = 0.42f)),
+                            colors = listOf(
+                                Color.White.copy(alpha = (0.82f * strength).coerceIn(0.55f, 0.92f)),
+                                Color.White.copy(alpha = (0.55f * strength).coerceIn(0.35f, 0.78f)),
+                            ),
                             start = Offset(0f, 0f),
                             end = Offset(size.width, size.height),
                         )
@@ -824,9 +874,11 @@ fun Modifier.darkNightGlassCardSurface(
                 if (glass.isDark && isBright) {
                     drawRect(Color.Black.copy(alpha = 0.28f))
                 }
+                val a1 = (glass.fillA.alpha * strength).coerceIn(0.05f, 0.90f)
+                val a2 = (glass.fillB.alpha * strength).coerceIn(0.02f, 0.70f)
                 drawRect(
                     brush = Brush.linearGradient(
-                        colors = listOf(glass.fillA, glass.fillB),
+                        colors = listOf(glass.fillA.copy(alpha = a1), glass.fillB.copy(alpha = a2)),
                         start = Offset(0f, 0f),
                         end = Offset(size.width, size.height),
                     )
@@ -1134,7 +1186,7 @@ fun DarkNightGradientPaletteSection(
                     Text("Global Aura & Frosted Glass", color = glass.content, fontWeight = FontWeight.Medium, fontSize = 14.sp)
                     Text("Luminous multi-blob gradient & translucent cards", color = glass.contentSecondary, fontSize = 11.sp)
                 }
-                Switch(
+                DarkNightSwitch(
                     checked = themeState.auraEnabled,
                     onCheckedChange = { DarkNightThemeStore.setAuraEnabled(context, it) },
                 )
@@ -1149,7 +1201,7 @@ fun DarkNightGradientPaletteSection(
                     Text("Startup Visual Animation", color = glass.content, fontWeight = FontWeight.Medium, fontSize = 14.sp)
                     Text("Animates smoothly on launch, then settles static", color = glass.contentSecondary, fontSize = 11.sp)
                 }
-                Switch(
+                DarkNightSwitch(
                     checked = themeState.startupAnimEnabled,
                     onCheckedChange = { DarkNightThemeStore.setStartupAnimEnabled(context, it) },
                 )
@@ -1207,7 +1259,7 @@ fun DarkNightGradientPaletteSection(
                     Text("AMOLED Pure Black Base", color = glass.content, fontWeight = FontWeight.Medium, fontSize = 14.sp)
                     Text("Use #000000 backdrop in Dark mode with softer blobs", color = glass.contentSecondary, fontSize = 11.sp)
                 }
-                Switch(
+                DarkNightSwitch(
                     checked = themeState.amoledBlack,
                     onCheckedChange = { DarkNightThemeStore.setAmoledBlack(context, it) },
                 )
@@ -1222,14 +1274,40 @@ fun DarkNightGradientPaletteSection(
                     Text("Card Corner Radius", color = glass.content, fontWeight = FontWeight.Medium, fontSize = 14.sp)
                     Text("${themeState.cardCornerRadiusDp}dp", color = glass.accent, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
                 }
-                Slider(
+                DarkNightSlider(
                     value = themeState.cardCornerRadiusDp.toFloat(),
                     onValueChange = { DarkNightThemeStore.setCardCornerRadius(context, it.roundToInt()) },
                     valueRange = 12f..28f,
-                    colors = SliderDefaults.colors(
-                        thumbColor = active.primaryGlow,
-                        activeTrackColor = active.primaryGlow,
-                    ),
+                )
+            }
+
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text("Blur Radius", color = glass.content, fontWeight = FontWeight.Medium, fontSize = 14.sp)
+                    Text("${themeState.blurRadiusDp.roundToInt()}dp", color = glass.accent, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
+                }
+                DarkNightSlider(
+                    value = themeState.blurRadiusDp,
+                    onValueChange = { DarkNightThemeStore.setBlurRadiusDp(context, it) },
+                    valueRange = 0f..40f,
+                )
+            }
+
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text("Card Glass Strength", color = glass.content, fontWeight = FontWeight.Medium, fontSize = 14.sp)
+                    Text("${"%.1f".format(themeState.glassStrength)}x", color = glass.accent, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
+                }
+                DarkNightSlider(
+                    value = themeState.glassStrength,
+                    onValueChange = { DarkNightThemeStore.setGlassStrength(context, it) },
+                    valueRange = 0.3f..2.0f,
                 )
             }
 
@@ -1242,7 +1320,7 @@ fun DarkNightGradientPaletteSection(
                     Text("Glass Border Highlight", color = glass.content, fontWeight = FontWeight.Medium, fontSize = 14.sp)
                     Text("Top 1dp specular edge glint on glass cards", color = glass.contentSecondary, fontSize = 11.sp)
                 }
-                Switch(
+                DarkNightSwitch(
                     checked = themeState.borderHighlightEnabled,
                     onCheckedChange = { DarkNightThemeStore.setBorderHighlight(context, it) },
                 )
@@ -1297,7 +1375,7 @@ fun DarkNightGradientPaletteSection(
             // PART 2: Pill Dock Style (Glass vs Dark Solid; Light mode auto uses Light Glass)
             if (themeState.navStyle == DarkNightNavStyle.BOTTOM_BAR) {
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text("Dock Style (Dark mode)", color = glass.content, fontWeight = FontWeight.Medium, fontSize = 14.sp)
+                    Text("Dock Style", color = glass.content, fontWeight = FontWeight.Medium, fontSize = 14.sp)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),

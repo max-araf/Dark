@@ -98,6 +98,8 @@ import com.kazesu.manager.ui.component.material.TonalCard
 import com.kazesu.manager.ui.component.material.expressiveTopAppBarColors
 import com.kazesu.manager.ui.component.rebootlistpopup.RebootListPopup
 import com.kazesu.manager.ui.component.statustag.StatusTag
+import com.kazesu.manager.ui.component.DarkNightStatusCardMaterial
+import com.kazesu.manager.ui.component.DarkNightStatusKind
 import com.kazesu.manager.ui.component.TuneHeroCard
 import com.kazesu.manager.ui.theme.LocalBackgroundImagePath
 import com.kazesu.manager.ui.theme.backgroundAwareColor
@@ -299,7 +301,33 @@ private fun StatusCard(
             actions.onInstallClick()
         }
     }
-    if (ksuActive && state.homeLayout == HomeLayout.IMMERSIVE) {
+    val hasCustomCard = state.homeLayout == HomeLayout.IMMERSIVE ||
+        state.homeCardImagePath.isNotEmpty() ||
+        state.homeCardStickers.isNotEmpty()
+    val isDarkNightAura = LocalBackgroundImagePath.current == "darknight://aura"
+    if (isDarkNightAura && !hasCustomCard) {
+        val kind = when {
+            ksuActive -> DarkNightStatusKind.WORKING
+            state.isRootAvailable || state.isPreviewMode -> DarkNightStatusKind.LIMITED
+            else -> DarkNightStatusKind.NOT_INSTALLED
+        }
+        val ver = if (ksuActive) {
+            "${state.ksuVersion}-${state.kernelUAPIVersion ?: state.managerUAPIVersion}"
+        } else {
+            state.kernelVersion.toString()
+        }
+        val pillTag = when (kind) {
+            DarkNightStatusKind.WORKING -> state.workingModeLabel.ifBlank { if (state.lkmMode == true) "LKM · GKI" else "Non-GKI" }
+            DarkNightStatusKind.LIMITED -> "SuSFS"
+            DarkNightStatusKind.NOT_INSTALLED -> "Install"
+        }
+        DarkNightStatusCardMaterial(
+            kind = kind,
+            versionLabel = ver,
+            pillTag = pillTag,
+            onClick = onClick,
+        )
+    } else if (ksuActive && state.homeLayout == HomeLayout.IMMERSIVE) {
         ImmersiveStatusCardMaterial(state = state, onClick = onClick)
     } else if (ksuActive) {
         ActiveStatusCard(state = state, onClick = onClick)

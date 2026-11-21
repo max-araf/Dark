@@ -50,7 +50,9 @@ import com.kazesu.manager.ui.theme.DarkNightGlassCard
 import com.kazesu.manager.ui.theme.DarkNightGradientButton
 import com.kazesu.manager.ui.theme.DarkNightPalette
 import com.kazesu.manager.ui.theme.DarkNightPalettes
+import com.kazesu.manager.ui.component.DarkNightSwitch
 import com.kazesu.manager.ui.theme.DarkNightThemeStore
+import com.kazesu.manager.ui.theme.LocalDarkNightGlass
 
 @Composable
 fun DarkNightThemeStudioScreen() {
@@ -82,19 +84,19 @@ fun DarkNightThemeStudioScreen() {
                     Icon(
                         painter = painterResource(R.drawable.ic_dn_back),
                         contentDescription = "Back",
-                        tint = Color.White,
+                        tint = LocalDarkNightGlass.current.content,
                     )
                 }
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = "DarkNight Gradient Studio",
-                        color = Color.White,
+                        color = LocalDarkNightGlass.current.content,
                         fontWeight = FontWeight.Bold,
                         fontSize = 19.sp,
                     )
                     Text(
                         text = "Active: ${active.name} (${active.hexTop})",
-                        color = Color.White.copy(alpha = 0.72f),
+                        color = LocalDarkNightGlass.current.contentSecondary,
                         fontSize = 12.sp,
                     )
                 }
@@ -111,13 +113,13 @@ fun DarkNightThemeStudioScreen() {
                 DarkNightGlassCard(palette = active) {
                     Text(
                         text = "Online Theme Store",
-                        color = Color.White,
+                        color = LocalDarkNightGlass.current.content,
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 16.sp,
                     )
                     Text(
                         text = "Download community themes or upload your own custom DarkNightSu theme online.",
-                        color = Color.White.copy(alpha = 0.72f),
+                        color = LocalDarkNightGlass.current.contentSecondary,
                         fontSize = 13.sp,
                     )
                     DarkNightGradientButton(
@@ -134,14 +136,14 @@ fun DarkNightThemeStudioScreen() {
                             modifier = Modifier.weight(1f),
                             border = BorderStroke(1.dp, Color.White.copy(alpha = 0.25f)),
                         ) {
-                            Text("Upload My Theme", color = Color.White)
+                            Text("Upload My Theme", color = LocalDarkNightGlass.current.content)
                         }
                         OutlinedButton(
                             onClick = { navigator.push(Route.ColorPalette()) },
                             modifier = Modifier.weight(1f),
                             border = BorderStroke(1.dp, Color.White.copy(alpha = 0.25f)),
                         ) {
-                            Text("Advanced Editor", color = Color.White)
+                            Text("Advanced Editor", color = LocalDarkNightGlass.current.content)
                         }
                     }
                 }
@@ -154,10 +156,10 @@ fun DarkNightThemeStudioScreen() {
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Global Aura Backdrop", color = Color.White, fontWeight = FontWeight.Medium, fontSize = 15.sp)
-                            Text("Luminous top gradient glow across the manager", color = Color.White.copy(alpha = 0.65f), fontSize = 12.sp)
+                            Text("Global Aura Backdrop", color = LocalDarkNightGlass.current.content, fontWeight = FontWeight.Medium, fontSize = 15.sp)
+                            Text("Luminous top gradient glow across the manager", color = LocalDarkNightGlass.current.contentSecondary, fontSize = 12.sp)
                         }
-                        Switch(
+                        DarkNightSwitch(
                             checked = themeState.auraEnabled,
                             onCheckedChange = { DarkNightThemeStore.setAuraEnabled(context, it) },
                         )
@@ -168,10 +170,10 @@ fun DarkNightThemeStudioScreen() {
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Startup Visual Animation", color = Color.White, fontWeight = FontWeight.Medium, fontSize = 15.sp)
-                            Text("Smooth aura bloom on app start, then settles static", color = Color.White.copy(alpha = 0.65f), fontSize = 12.sp)
+                            Text("Startup Visual Animation", color = LocalDarkNightGlass.current.content, fontWeight = FontWeight.Medium, fontSize = 15.sp)
+                            Text("Smooth aura bloom on app start, then settles static", color = LocalDarkNightGlass.current.contentSecondary, fontSize = 12.sp)
                         }
-                        Switch(
+                        DarkNightSwitch(
                             checked = themeState.startupAnimEnabled,
                             onCheckedChange = { DarkNightThemeStore.setStartupAnimEnabled(context, it) },
                         )
@@ -184,13 +186,13 @@ fun DarkNightThemeStudioScreen() {
                         modifier = Modifier.fillMaxWidth(),
                         border = BorderStroke(1.dp, Color.White.copy(alpha = 0.2f)),
                     ) {
-                        Text("Replay Startup Intro Screen", color = Color.White)
+                        Text("Replay Startup Intro Screen", color = LocalDarkNightGlass.current.content)
                     }
                 }
 
                 Text(
                     text = "Gradient Color Palettes (10)",
-                    color = Color.White,
+                    color = LocalDarkNightGlass.current.content,
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 15.sp,
                     modifier = Modifier.padding(top = 4.dp),
@@ -280,14 +282,14 @@ private fun PaletteSwatchCard(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = palette.name,
-                        color = Color.White,
+                        color = LocalDarkNightGlass.current.content,
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 13.sp,
                         maxLines = 1,
                     )
                     Text(
                         text = "${palette.hexTop} • ${palette.hexBottom}",
-                        color = Color.White.copy(alpha = 0.6f),
+                        color = LocalDarkNightGlass.current.contentSecondary,
                         fontSize = 10.sp,
                         maxLines = 1,
                     )

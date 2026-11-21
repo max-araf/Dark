@@ -8,11 +8,13 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.view.WindowInsetsControllerCompat
-import com.materialkolor.dynamiccolor.ColorSpec
 import com.kazesu.manager.ui.webui.MonetColorsProvider
+import com.materialkolor.dynamiccolor.ColorSpec
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.LocalContentColor
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -48,58 +50,75 @@ fun MiuixKernelSUTheme(
         appSettings.colorMode.isMonet && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ->
             if (darkTheme) dynamicDarkColorScheme(context).primary
             else dynamicLightColorScheme(context).primary
-
-        // No system dynamic colors before Android 12.
         appSettings.colorMode.isMonet -> FallbackSeedColor
-
         else -> null
     }
 
-    val controller = ThemeController(
-        when (appSettings.colorMode) {
+    val isDarkNightAura = LocalBackgroundImagePath.current == "darknight://aura"
+    val schemeMode = when {
+        isDarkNightAura && darkTheme -> ColorSchemeMode.MonetDark
+        isDarkNightAura && !darkTheme -> ColorSchemeMode.MonetLight
+        else -> when (appSettings.colorMode) {
             ColorMode.SYSTEM -> ColorSchemeMode.System
             ColorMode.LIGHT -> ColorSchemeMode.Light
             ColorMode.DARK -> ColorSchemeMode.Dark
             ColorMode.MONET_SYSTEM -> ColorSchemeMode.MonetSystem
             ColorMode.MONET_LIGHT -> ColorSchemeMode.MonetLight
             ColorMode.MONET_DARK, ColorMode.DARK_AMOLED -> ColorSchemeMode.MonetDark
-        },
-        keyColor = resolvedKeyColor,
-        isDark = darkTheme,
-        paletteStyle = miuixPaletteStyle,
-        colorSpec = miuixColorSpec,
-    )
+        }
+    }
+
+    // Re-create ThemeController whenever palette keyColor or darkTheme changes (B3)
+    val controller = remember(schemeMode, resolvedKeyColor, darkTheme, miuixPaletteStyle, miuixColorSpec) {
+        ThemeController(
+            schemeMode,
+            keyColor = resolvedKeyColor,
+            isDark = darkTheme,
+            paletteStyle = miuixPaletteStyle,
+            colorSpec = miuixColorSpec,
+        )
+    }
 
     MiuixTheme(
         controller = controller,
         content = {
-            LaunchedEffect(darkTheme) {
+            val glass = LocalDarkNightGlass.current
+            LaunchedEffect(glass.systemBarIconsLight) {
                 val window = (context as? Activity)?.window ?: return@LaunchedEffect
                 WindowInsetsControllerCompat(window, window.decorView).apply {
-                    isAppearanceLightStatusBars = !darkTheme
-                    isAppearanceLightNavigationBars = !darkTheme
+                    isAppearanceLightStatusBars = glass.systemBarIconsLight
+                    isAppearanceLightNavigationBars = glass.systemBarIconsLight
                 }
             }
             val baseColors = MiuixTheme.colorScheme
             val hasCustomBackground = LocalBackgroundImagePath.current.isNotEmpty()
-            val glass = LocalDarkNightGlass.current
-            val isDarkNightAura = LocalBackgroundImagePath.current == "darknight://aura"
-            // Miuix mutes disabled text to ~38% alpha. Over a translucent card on top of a
-            // custom background that is barely legible, so keep the disabled look but raise
-            // the contrast.
-            //
-            // Always hand a fresh Colors instance to the nested theme. MiuixTheme() copies into
-            // a remembered Colors object and a remembered snapshot here would keep the palette
-            // from before a light/dark, key color or monet change (until the app is restarted).
+            val effectiveAccent = if (!glass.isDark && glass.accent.luminance() > 0.55f) glass.accentDark else glass.accent
+            val onAccent = contrastOn(effectiveAccent)
+
+            // Override Miuix primary, containers, and text colors from LocalDarkNightGlass (B2 + B3)
             val readableColors = if (isDarkNightAura) {
+                val glassCardFill = if (glass.isDark) Color.White.copy(alpha = 0.10f) else Color.White.copy(alpha = 0.64f)
                 baseColors.copy(
+                    primary = effectiveAccent,
+                    primaryVariant = effectiveAccent,
+                    onPrimary = onAccent,
+                    onPrimaryVariant = onAccent,
+                    surfaceContainer = glassCardFill,
+                    surfaceContainerHigh = glassCardFill,
+                    surfaceContainerHighest = glassCardFill,
                     onSurface = glass.content,
                     onBackground = glass.content,
-                    onSurfaceVariantSummary = glass.contentSecondary,
+                    onBackgroundVariant = glass.contentSecondary,
                     onSurfaceSecondary = glass.contentSecondary,
-                    disabledOnSurface = glass.content.copy(alpha = 0.72f),
-                    disabledOnSecondary = glass.content.copy(alpha = 0.72f),
-                    disabledOnSecondaryVariant = glass.content.copy(alpha = 0.72f),
+                    onSurfaceContainer = glass.content,
+                    onSurfaceContainerVariant = glass.contentSecondary,
+                    onSurfaceContainerHigh = glass.content,
+                    onSurfaceContainerHighest = glass.content,
+                    onSurfaceVariantSummary = glass.contentSecondary,
+                    onSurfaceVariantActions = glass.contentSecondary,
+                    disabledOnSurface = glass.content.copy(alpha = 0.65f),
+                    disabledOnSecondary = glass.content.copy(alpha = 0.65f),
+                    disabledOnSecondaryVariant = glass.content.copy(alpha = 0.65f),
                 )
             } else if (hasCustomBackground) {
                 baseColors.copy(
@@ -108,10 +127,21 @@ fun MiuixKernelSUTheme(
                     disabledOnSecondaryVariant = baseColors.onSurface.copy(alpha = 0.85f),
                 )
             } else {
-                baseColors.copy()
+                // Aura OFF: flat solid surfaces + readable text + active palette accent (B6)
+                val solidCard = if (glass.isDark) Color(0xFF0E1424) else Color.White
+                baseColors.copy(
+                    primary = effectiveAccent,
+                    primaryVariant = effectiveAccent,
+                    onPrimary = onAccent,
+                    onPrimaryVariant = onAccent,
+                    surfaceContainer = solidCard,
+                    surfaceContainerHigh = solidCard,
+                    surfaceContainerHighest = solidCard,
+                    onSurface = glass.content,
+                    onBackground = glass.content,
+                    onSurfaceVariantSummary = glass.contentSecondary,
+                )
             }
-            // Overlay after the background-aware contrast tweak: an explicit theme/user colour
-            // always wins. The tokens are resolved once per theme change, not per frame.
             val overlaidColors = readableColors.withAppearance(appSettings.appearance?.colorsFor(darkTheme))
             MiuixTheme(overlaidColors) {
                 MonetColorsProvider.UpdateCss()

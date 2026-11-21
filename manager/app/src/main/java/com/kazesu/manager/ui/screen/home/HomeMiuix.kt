@@ -72,6 +72,8 @@ import com.kazesu.manager.ui.component.miuix.AppScaffold
 import com.kazesu.manager.ui.component.miuix.WarningCard
 import com.kazesu.manager.ui.component.rebootlistpopup.RebootListPopupMiuix
 import com.kazesu.manager.ui.component.statustag.StatusTag
+import com.kazesu.manager.ui.component.DarkNightStatusCardMiuix
+import com.kazesu.manager.ui.component.DarkNightStatusKind
 import com.kazesu.manager.ui.component.TuneHeroCard
 import com.kazesu.manager.ai.api.AiFeatureBridge
 import com.kazesu.manager.ui.theme.AiAssistantMaterialTheme
@@ -166,7 +168,7 @@ fun HomePagerMiuix(
                             onClick = if (state.isRootAvailable) actions.onOpenTune else actions.onInstallClick,
                             locked = !state.isRootAvailable,
                         )
-                        top.yukonga.miuix.kmp.basic.Card(
+                        AppCard(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable(onClick = actions.onOpenDarkNightToolbox),
@@ -353,12 +355,37 @@ private fun StatusCard(
             actions.onInstallClick()
         }
     }
+    val hasCustomLayout = state.homeLayout == HomeLayout.IMMERSIVE || state.homeCardStickers.isNotEmpty()
+    val isDarkNightAura = LocalBackgroundImagePath.current == "darknight://aura"
     when {
+        isDarkNightAura && !hasCustomLayout -> {
+            val kind = when {
+                state.ksuVersion != null -> DarkNightStatusKind.WORKING
+                state.isRootAvailable || state.isPreviewMode -> DarkNightStatusKind.LIMITED
+                else -> DarkNightStatusKind.NOT_INSTALLED
+            }
+            val ver = if (state.ksuVersion != null) {
+                "${state.ksuVersion}-${state.kernelUAPIVersion ?: state.managerUAPIVersion}"
+            } else {
+                state.kernelVersion.toString()
+            }
+            val chipLabel = when (kind) {
+                DarkNightStatusKind.WORKING -> "Working"
+                DarkNightStatusKind.LIMITED -> "Limited"
+                DarkNightStatusKind.NOT_INSTALLED -> "Not installed"
+            }
+            DarkNightStatusCardMiuix(
+                kind = kind,
+                versionLabel = ver,
+                chipLabel = chipLabel,
+                homeCardImagePath = state.homeCardImagePath,
+                onClick = onClick,
+            )
+        }
         state.ksuVersion != null && state.homeLayout == HomeLayout.IMMERSIVE -> ImmersiveStatusCardMiuix(
             state = state,
             onClick = onClick,
         )
-
         state.ksuVersion != null -> ActiveStatusCard(state = state, onClick = onClick)
         else -> InactiveStatusCard(
             state = state,

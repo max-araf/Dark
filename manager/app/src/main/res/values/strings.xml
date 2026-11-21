@@ -1724,11 +1724,11 @@
     <string name="theme_store_comments_format_link">Insert link</string>
     <string name="theme_store_comments_login_to_reply">Sign in to reply</string>
     <string name="theme_store_device_reauthorize">Reset device authorization (request again on next connection)</string>
-    <!-- KazeZygisk -->
-    <string name="settings_builtin_zygisk">KazeZygisk</string>
-    <string name="settings_builtin_zygisk_summary">KazeZygisk built-in engine. See the Zygisk dashboard.</string>
-    <string name="settings_builtin_zygisk_dashboard">KazeZygisk Dashboard</string>
-    <string name="settings_builtin_zygisk_dashboard_summary">View KazeZygisk status and loaded modules</string>
+    <!-- DarkNightZygisk -->
+    <string name="settings_builtin_zygisk">DarkNightZygisk</string>
+    <string name="settings_builtin_zygisk_summary">DarkNightZygisk built-in engine. See the Zygisk dashboard.</string>
+    <string name="settings_builtin_zygisk_dashboard">DarkNightZygisk Dashboard</string>
+    <string name="settings_builtin_zygisk_dashboard_summary">View DarkNightZygisk status and loaded modules</string>
     <string name="builtin_zygisk_status_title">Status</string>
     <string name="builtin_zygisk_daemon_status">Daemon Service</string>
     <string name="builtin_zygisk_monitor_status">Monitor Service</string>
@@ -1754,7 +1754,7 @@
     <string name="builtin_zygisk_targets">Targets: %1$s</string>
     <string name="builtin_zygisk_process_count">%1$d process(es)</string>
     <string name="builtin_zygisk_no_processes">No process attached yet</string>
-    <string name="builtin_zygisk_suppressed_hint">External Zygisk provider suppressed by KazeZygisk</string>
+    <string name="builtin_zygisk_suppressed_hint">External Zygisk provider suppressed by DarkNightZygisk</string>
     <string name="module_suppressed_by_builtin">SUPPRESSED</string>
     <string name="builtin_zygisk_options_title">Options</string>
     <string name="builtin_zygisk_options_hint">Changes apply to apps started afterwards. Restart an app to pick them up.</string>
@@ -1784,7 +1784,7 @@
     <string name="builtin_zygisk_health_safe_mode">Safe mode</string>
     <string name="builtin_zygisk_health_unknown">Unknown</string>
     <string name="builtin_zygisk_guard_failures">%1$d of %2$d failed boots</string>
-    <string name="builtin_zygisk_guard_blocked">The boot guard latched KazeZygisk off. Clear it to try again.</string>
+    <string name="builtin_zygisk_guard_blocked">The boot guard latched DarkNightZygisk off. Clear it to try again.</string>
     <string name="builtin_zygisk_guard_clear">Clear boot guard</string>
     <string name="builtin_zygisk_guard_cleared">Boot guard cleared</string>
     <string name="builtin_zygisk_guard_clear_failed">Could not clear the boot guard</string>
@@ -1979,19 +1979,19 @@
     <string name="kernel_tuning_temporary">Temporary</string>
     <string name="kernel_tuning_sysctl_delete">Remove %1$s?</string>
     <string name="kernel_tuning_no_device">No tunables reported by the kernel</string>
-    <string name="guard_dialog_title">KazeGuard found risks</string>
-    <string name="guard_dialog_summary">KazeGuard found risky code in this module before installation.</string>
-    <string name="guard_dialog_blocks">KazeGuard blocks this module by default because it was flagged as extreme. Only continue if you trust its source.</string>
+    <string name="guard_dialog_title">DarkNightGuard found risks</string>
+    <string name="guard_dialog_summary">DarkNightGuard found risky code in this module before installation.</string>
+    <string name="guard_dialog_blocks">DarkNightGuard blocks this module by default because it was flagged as extreme. Only continue if you trust its source.</string>
     <string name="guard_continue">Continue</string>
     <string name="guard_install_anyway">Install anyway</string>
-    <string name="settings_guard_title">KazeGuard</string>
+    <string name="settings_guard_title">DarkNightGuard</string>
     <string name="settings_guard_summary">Reviews modules for known malware signatures and destructive commands before installing them. Extreme findings block the install until you confirm.</string>
     <string name="settings_guard_update">Update rules</string>
-    <string name="settings_guard_update_summary">Download the latest KazeGuard rule catalog.</string>
+    <string name="settings_guard_update_summary">Download the latest DarkNightGuard rule catalog.</string>
     <string name="settings_guard_update_action">Update</string>
-    <string name="settings_guard_update_success">KazeGuard rules updated</string>
-    <string name="settings_guard_update_failed">Could not update KazeGuard rules</string>
-    <string name="settings_guard_apply_failed">Failed to update KazeGuard</string>
+    <string name="settings_guard_update_success">DarkNightGuard rules updated</string>
+    <string name="settings_guard_update_failed">Could not update DarkNightGuard rules</string>
+    <string name="settings_guard_apply_failed">Failed to update DarkNightGuard</string>
     <string name="home_limited_mode">Limited mode</string>
     <string name="home_limited_mode_summary">Root available. Kernel features unavailable.</string>
     <string name="home_how_to_integrate_kernel">How to integrate kernel</string>
@@ -2012,4 +2012,19 @@
     <string name="darknight_infobar_show_battery">Battery</string>
     <string name="darknight_infobar_show_temp">Temperature</string>
     <string name="darknight_infobar_open_full">More settings</string>
+
+    <!-- DarkNightSu v5.0.0 Status Cards & Cleanup -->
+    <string name="dn_status_mat_working_l1">Kernel</string>
+    <string name="dn_status_mat_working_l2">Working</string>
+    <string name="dn_status_mat_limited_l1">Root only</string>
+    <string name="dn_status_mat_limited_l2">Limited</string>
+    <string name="dn_status_mat_notinstalled_l1">No kernel</string>
+    <string name="dn_status_mat_notinstalled_l2">Not installed</string>
+    <string name="dn_status_version_label">Version</string>
+    <string name="dn_status_tap_card">Tap card</string>
+    <string name="dn_status_to_install">to install</string>
+    <string name="dn_status_miuix_limited_label">ROOT · NO DN KERNEL</string>
+    <string name="dn_status_miuix_notinstalled_label">NO ROOT FOUND</string>
+    <string name="dn_bootguard_moved_title">Bootloop Protection Moved</string>
+    <string name="dn_bootguard_moved_summary">Bootloop protection is now managed in Settings -&gt; Tools. Tap to open.</string>
 </resources>

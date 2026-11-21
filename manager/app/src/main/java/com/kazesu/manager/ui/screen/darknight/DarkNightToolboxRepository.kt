@@ -597,4 +597,15 @@ object DarkNightToolboxRepository {
         val (ok, msg) = runRoot("echo ${algo.shellQuote()} > /proc/sys/net/ipv4/tcp_congestion_control")
         ok to (if (ok) "TCP congestion set to $algo" else msg.ifEmpty { "Failed to set TCP congestion" })
     }
+
+    // B11: One-time cleanup of legacy Toolbox 3-strike bootguard scripts so Settings -> Tools Bootloop Protection does not conflict
+    suspend fun migrateLegacyBootloopGuard(context: android.content.Context) = withContext(Dispatchers.IO) {
+        val prefs = context.applicationContext.getSharedPreferences("darknight_theme_prefs", android.content.Context.MODE_PRIVATE)
+        if (prefs.getBoolean("bootguard_migrated", false)) return@withContext
+        val script = """
+            rm -f /data/adb/post-fs-data.d/darknight_bootguard.sh                   /data/adb/service.d/darknight_bootguard_reset.sh                   /data/adb/darknight_boot_fail_count                   /data/adb/darknight_toolbox/boot_fail_count 2>/dev/null || true
+        """.trimIndent()
+        runRoot(script)
+        prefs.edit().putBoolean("bootguard_migrated", true).apply()
+    }
 }

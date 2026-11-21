@@ -36,7 +36,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
+import com.kazesu.manager.ui.component.DarkNightSwitch
 import androidx.compose.material3.Text
 import com.kazesu.manager.ui.theme.LocalDarkNightGlass
 import androidx.compose.material3.TextButton
@@ -58,6 +58,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.kazesu.manager.R
 import androidx.compose.ui.unit.sp
@@ -146,17 +147,17 @@ fun DarkNightToolboxScreen() {
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 IconButton(onClick = { navigator.pop() }) {
-                    Icon(painter = painterResource(R.drawable.ic_dn_back), contentDescription = "Back", tint = Color.White)
+                    Icon(painter = painterResource(R.drawable.ic_dn_back), contentDescription = "Back", tint = LocalDarkNightGlass.current.content)
                 }
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("DarkNight Toolbox", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 19.sp)
-                    Text("Kernel Control & Automation", color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp)
+                    Text("DarkNight Toolbox", color = LocalDarkNightGlass.current.content, fontWeight = FontWeight.Bold, fontSize = 19.sp)
+                    Text("Kernel Control & Automation", color = LocalDarkNightGlass.current.contentSecondary, fontSize = 12.sp)
                 }
                 IconButton(onClick = { navigator.push(Route.DarkNightThemeStudio) }) {
                     Icon(Icons.Filled.Star, contentDescription = "Themes", tint = palette.secondaryGlow)
                 }
                 IconButton(onClick = { scope.launch { refreshAll(); toast("Refreshed") } }) {
-                    Icon(Icons.Filled.Refresh, contentDescription = "Refresh", tint = Color.White)
+                    Icon(Icons.Filled.Refresh, contentDescription = "Refresh", tint = LocalDarkNightGlass.current.content)
                 }
             }
 
@@ -240,11 +241,11 @@ fun DarkNightToolboxScreen() {
                         DarkNightGlassCard(palette = palette, useBlur = false) {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Icon(Icons.Rounded.Memory, contentDescription = null, tint = palette.secondaryGlow)
-                                Text("Global Kernel Profile", color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+                                Text("Global Kernel Profile", color = LocalDarkNightGlass.current.content, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
                             }
                             Text(
                                 "Switch CPU/GPU governors & ZRAM swappiness instantly.",
-                                color = Color.White.copy(alpha = 0.7f),
+                                color = LocalDarkNightGlass.current.contentSecondary,
                                 fontSize = 12.sp,
                             )
                             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -271,10 +272,10 @@ fun DarkNightToolboxScreen() {
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
-                                    Text("Per-App Auto Profile Daemon", color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
-                                    Text("Format: package.name=gaming|balanced|battery", color = Color.White.copy(alpha = 0.68f), fontSize = 12.sp)
+                                    Text("Per-App Auto Profile Daemon", color = LocalDarkNightGlass.current.content, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+                                    Text("Format: package.name=gaming|balanced|battery", color = LocalDarkNightGlass.current.contentSecondary, fontSize = 12.sp)
                                 }
-                                Switch(checked = profileDaemonEnabled, onCheckedChange = { profileDaemonEnabled = it })
+                                DarkNightSwitch(checked = profileDaemonEnabled, onCheckedChange = { profileDaemonEnabled = it })
                             }
                             OutlinedTextField(
                                 value = appRulesText,
@@ -299,12 +300,12 @@ fun DarkNightToolboxScreen() {
 
                     1 -> {
                         DarkNightGlassCard(palette = palette, useBlur = false) {
-                            Text("Battery Telemetry", color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
-                            Text("Level: ${battery.level}%  •  Status: ${battery.status}", color = Color.White)
-                            Text("Temp: ${"%.1f".format(battery.tempC)}°C  •  Current: ${battery.currentMa} mA  •  Voltage: ${battery.voltageMv} mV", color = Color.White.copy(alpha = 0.85f), fontSize = 13.sp)
+                            Text("Battery Telemetry", color = LocalDarkNightGlass.current.content, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+                            Text("Level: ${battery.level}%  •  Status: ${battery.status}", color = LocalDarkNightGlass.current.content)
+                            Text("Temp: ${"%.1f".format(battery.tempC)}°C  •  Current: ${battery.currentMa} mA  •  Voltage: ${battery.voltageMv} mV", color = LocalDarkNightGlass.current.content.copy(alpha = 0.86f), fontSize = 13.sp)
                             Text(
                                 if (battery.bypassSupported) "Control node: ${battery.bypassNode}" else "No kernel charging control node found on this device",
-                                color = Color.White.copy(alpha = 0.65f),
+                                color = LocalDarkNightGlass.current.contentSecondary,
                                 fontSize = 12.sp,
                             )
                         }
@@ -316,10 +317,10 @@ fun DarkNightToolboxScreen() {
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
-                                    Text("Bypass Charging (Gaming Mode)", color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
-                                    Text("Pause battery charging while plugged in to keep thermals low.", color = Color.White.copy(alpha = 0.68f), fontSize = 12.sp)
+                                    Text("Bypass Charging (Gaming Mode)", color = LocalDarkNightGlass.current.content, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+                                    Text("Pause battery charging while plugged in to keep thermals low.", color = LocalDarkNightGlass.current.contentSecondary, fontSize = 12.sp)
                                 }
-                                Switch(
+                                DarkNightSwitch(
                                     checked = battery.bypassActive,
                                     enabled = battery.bypassSupported,
                                     onCheckedChange = { enable ->
@@ -332,7 +333,7 @@ fun DarkNightToolboxScreen() {
                                 )
                             }
 
-                            Text("Smart Charge Limit", color = Color.White, fontWeight = FontWeight.Medium, fontSize = 14.sp)
+                            Text("Smart Charge Limit", color = LocalDarkNightGlass.current.content, fontWeight = FontWeight.Medium, fontSize = 14.sp)
                             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 listOf(0 to "Off", 75 to "75%", 80 to "80%", 85 to "85%", 90 to "90%").forEach { (pct, label) ->
                                     FilterChip(
@@ -356,17 +357,17 @@ fun DarkNightToolboxScreen() {
                         DarkNightGlassCard(palette = palette, useBlur = false) {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Icon(Icons.Rounded.Security, contentDescription = null, tint = palette.secondaryGlow)
-                                Text("Integrity & Stealth Status", color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+                                Text("Integrity & Stealth Status", color = LocalDarkNightGlass.current.content, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
                             }
-                            Text("SELinux: ${integrity.selinuxMode}", color = Color.White)
-                            Text("Verified Boot State: ${integrity.verifiedBootState}", color = Color.White.copy(alpha = 0.85f))
-                            Text("SuSFS Detected: ${if (integrity.susfsDetected) "Active" else "Not found"}", color = Color.White.copy(alpha = 0.85f))
-                            Text("TrickyStore: ${if (integrity.trickyStoreInstalled) "Installed" else "Not installed"}  •  Keybox: ${if (integrity.keyboxPresent) "Present" else "Missing"}", color = Color.White.copy(alpha = 0.85f))
-                            Text("PIF Config: ${integrity.pifPath.ifEmpty { "Not found" }}", color = Color.White.copy(alpha = 0.65f), fontSize = 12.sp)
+                            Text("SELinux: ${integrity.selinuxMode}", color = LocalDarkNightGlass.current.content)
+                            Text("Verified Boot State: ${integrity.verifiedBootState}", color = LocalDarkNightGlass.current.content.copy(alpha = 0.86f))
+                            Text("SuSFS Detected: ${if (integrity.susfsDetected) "Active" else "Not found"}", color = LocalDarkNightGlass.current.content.copy(alpha = 0.86f))
+                            Text("TrickyStore: ${if (integrity.trickyStoreInstalled) "Installed" else "Not installed"}  •  Keybox: ${if (integrity.keyboxPresent) "Present" else "Missing"}", color = LocalDarkNightGlass.current.content.copy(alpha = 0.86f))
+                            Text("PIF Config: ${integrity.pifPath.ifEmpty { "Not found" }}", color = LocalDarkNightGlass.current.contentSecondary, fontSize = 12.sp)
                         }
 
                         DarkNightGlassCard(palette = palette, useBlur = false) {
-                            Text("TrickyStore target.txt Editor", color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+                            Text("TrickyStore target.txt Editor", color = LocalDarkNightGlass.current.content, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
                             OutlinedTextField(
                                 value = trickyTargets,
                                 onValueChange = { trickyTargets = it },
@@ -387,7 +388,7 @@ fun DarkNightToolboxScreen() {
                             )
                         }
                         DarkNightGlassCard(palette = palette, useBlur = false) {
-                            Text("Keybox X.509 Certificate Validator", color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+                            Text("Keybox X.509 Certificate Validator", color = LocalDarkNightGlass.current.content, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
                             Text(
                                 text = keyboxResult.summary,
                                 color = if (keyboxResult.validXml && keyboxResult.expiredCount == 0) Color(0xFF2EE59D) else Color(0xFFFFD60A),
@@ -403,17 +404,17 @@ fun DarkNightToolboxScreen() {
                                 modifier = Modifier.fillMaxWidth(),
                                 border = BorderStroke(1.dp, palette.secondaryGlow.copy(alpha = 0.5f)),
                             ) {
-                                Text("Re-validate keybox.xml", color = Color.White)
+                                Text("Re-validate keybox.xml", color = LocalDarkNightGlass.current.content)
                             }
                         }
                     }
 
                     3 -> {
                         DarkNightGlassCard(palette = palette, useBlur = false) {
-                            Text("Live Kernel Telemetry", color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
-                            Text("Kernel: ${telemetry.kernelRelease}", color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp)
-                            Text("Uptime: ${telemetry.uptime}", color = Color.White)
-                            Text("RAM: ${telemetry.memUsedMb} MB / ${telemetry.memTotalMb} MB  •  Peak Temp: ${"%.1f".format(telemetry.maxTempC)}°C", color = Color.White.copy(alpha = 0.9f))
+                            Text("Live Kernel Telemetry", color = LocalDarkNightGlass.current.content, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+                            Text("Kernel: ${telemetry.kernelRelease}", color = LocalDarkNightGlass.current.content.copy(alpha = 0.86f), fontSize = 12.sp)
+                            Text("Uptime: ${telemetry.uptime}", color = LocalDarkNightGlass.current.content)
+                            Text("RAM: ${telemetry.memUsedMb} MB / ${telemetry.memTotalMb} MB  •  Peak Temp: ${"%.1f".format(telemetry.maxTempC)}°C", color = LocalDarkNightGlass.current.content)
                             Spacer(modifier = Modifier.height(2.dp))
                             telemetry.clusters.forEach { c ->
                                 Text("${c.name}: ${c.curFreqMhz} MHz (${c.governor})", color = palette.secondaryGlow, fontSize = 12.sp)
@@ -421,10 +422,10 @@ fun DarkNightToolboxScreen() {
                         }
 
                         DarkNightGlassCard(palette = palette, useBlur = false) {
-                            Text("1-Click Kernel & System Log Dumper", color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+                            Text("1-Click Kernel & System Log Dumper", color = LocalDarkNightGlass.current.content, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
                             Text(
                                 "Bundles dmesg, last_kmsg / console-ramoops, logcat, and getprop into /sdcard/Download/DarkNightSu/.",
-                                color = Color.White.copy(alpha = 0.7f),
+                                color = LocalDarkNightGlass.current.contentSecondary,
                                 fontSize = 12.sp,
                             )
                             DarkNightGradientButton(
@@ -445,24 +446,22 @@ fun DarkNightToolboxScreen() {
 
                     4 -> {
                         DarkNightGlassCard(palette = palette, useBlur = false) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { navigator.push(Route.Tool) },
+                                verticalArrangement = Arrangement.spacedBy(2.dp),
                             ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text("3-Strike Bootloop Rescue Guard", color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
-                                    Text("Auto-disables all modules if 3 consecutive boots fail.", color = Color.White.copy(alpha = 0.68f), fontSize = 12.sp)
-                                }
-                                Switch(
-                                    checked = bootloopGuard,
-                                    onCheckedChange = { enable ->
-                                        scope.launch {
-                                            val (ok, msg) = DarkNightToolboxRepository.setBootloopGuard(enable)
-                                            if (ok) bootloopGuard = enable
-                                            toast(msg)
-                                        }
-                                    }
+                                Text(
+                                    text = stringResource(R.string.dn_bootguard_moved_title),
+                                    color = LocalDarkNightGlass.current.content,
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 15.sp,
+                                )
+                                Text(
+                                    text = stringResource(R.string.dn_bootguard_moved_summary),
+                                    color = LocalDarkNightGlass.current.contentSecondary,
+                                    fontSize = 12.sp,
                                 )
                             }
 
@@ -477,9 +476,9 @@ fun DarkNightToolboxScreen() {
                                     modifier = Modifier.weight(1f),
                                     border = BorderStroke(1.dp, palette.primaryGlow),
                                 ) {
-                                    Icon(Icons.Rounded.Backup, contentDescription = null, tint = Color.White)
+                                    Icon(Icons.Rounded.Backup, contentDescription = null, tint = LocalDarkNightGlass.current.content)
                                     Spacer(modifier = Modifier.padding(horizontal = 3.dp))
-                                    Text("Snapshot", color = Color.White)
+                                    Text("Snapshot", color = LocalDarkNightGlass.current.content)
                                 }
                                 OutlinedButton(
                                     onClick = {
@@ -489,24 +488,24 @@ fun DarkNightToolboxScreen() {
                                         }
                                     },
                                     modifier = Modifier.weight(1f),
-                                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.25f)),
+                                    border = BorderStroke(1.dp, LocalDarkNightGlass.current.content.copy(alpha = 0.22f)),
                                 ) {
-                                    Icon(Icons.Rounded.Restore, contentDescription = null, tint = Color.White)
+                                    Icon(Icons.Rounded.Restore, contentDescription = null, tint = LocalDarkNightGlass.current.content)
                                     Spacer(modifier = Modifier.padding(horizontal = 3.dp))
-                                    Text("Restore", color = Color.White)
+                                    Text("Restore", color = LocalDarkNightGlass.current.content)
                                 }
                             }
                         }
 
                         DarkNightGlassCard(palette = palette, useBlur = false) {
-                            Text("Partition Backup (Boot / DTBO / VBMeta)", color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+                            Text("Partition Backup (Boot / DTBO / VBMeta)", color = LocalDarkNightGlass.current.content, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
                             Text(
                                 "Dumps raw partition images + SHA-256 to /sdcard/Download/DarkNightSu/backups/.",
-                                color = Color.White.copy(alpha = 0.7f),
+                                color = LocalDarkNightGlass.current.contentSecondary,
                                 fontSize = 12.sp,
                             )
                             if (partitions.isEmpty()) {
-                                Text("No standard boot partitions detected (root required).", color = Color.White.copy(alpha = 0.65f), fontSize = 12.sp)
+                                Text("No standard boot partitions detected (root required).", color = LocalDarkNightGlass.current.contentSecondary, fontSize = 12.sp)
                             } else {
                                 partitions.forEach { entry ->
                                     OutlinedButton(
@@ -520,9 +519,9 @@ fun DarkNightToolboxScreen() {
                                             }
                                         },
                                         modifier = Modifier.fillMaxWidth(),
-                                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.22f)),
+                                        border = BorderStroke(1.dp, LocalDarkNightGlass.current.content.copy(alpha = 0.22f)),
                                     ) {
-                                        Text("Backup ${entry.name}", color = Color.White)
+                                        Text("Backup ${entry.name}", color = LocalDarkNightGlass.current.content)
                                     }
                                 }
                             }
@@ -531,10 +530,10 @@ fun DarkNightToolboxScreen() {
 
                     5 -> {
                         DarkNightGlassCard(palette = palette, useBlur = false) {
-                            Text("ZRAM & Memory", color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+                            Text("ZRAM & Memory", color = LocalDarkNightGlass.current.content, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
                             Text(
                                 "ZRAM: ${kernelTweaks.zramSizeMb} MB (${kernelTweaks.zramAlgo})  •  Swappiness: ${kernelTweaks.swappiness}",
-                                color = Color.White.copy(alpha = 0.85f),
+                                color = LocalDarkNightGlass.current.content.copy(alpha = 0.86f),
                                 fontSize = 13.sp,
                             )
                             Row(
@@ -550,19 +549,19 @@ fun DarkNightToolboxScreen() {
                                             }
                                         },
                                         modifier = Modifier.weight(1f),
-                                        border = BorderStroke(1.dp, if (active) palette.primaryGlow else Color.White.copy(alpha = 0.22f)),
+                                        border = BorderStroke(1.dp, if (active) palette.primaryGlow else LocalDarkNightGlass.current.content.copy(alpha = 0.22f)),
                                     ) {
-                                        Text("$swapVal", color = Color.White, fontSize = 12.sp)
+                                        Text("$swapVal", color = LocalDarkNightGlass.current.content, fontSize = 12.sp)
                                     }
                                 }
                             }
                         }
 
                         DarkNightGlassCard(palette = palette, useBlur = false) {
-                            Text("I/O Scheduler (${kernelTweaks.ioBlockDev.ifBlank { "none" }})", color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+                            Text("I/O Scheduler (${kernelTweaks.ioBlockDev.ifBlank { "none" }})", color = LocalDarkNightGlass.current.content, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
                             Text("Active: ${kernelTweaks.ioCurrent}", color = palette.secondaryGlow, fontSize = 13.sp)
                             if (kernelTweaks.ioAvailable.isEmpty()) {
-                                Text("No kernel I/O schedulers readable (root required).", color = Color.White.copy(alpha = 0.65f), fontSize = 12.sp)
+                                Text("No kernel I/O schedulers readable (root required).", color = LocalDarkNightGlass.current.contentSecondary, fontSize = 12.sp)
                             } else {
                                 kernelTweaks.ioAvailable.chunked(3).forEach { rowItems ->
                                     Row(
@@ -578,9 +577,9 @@ fun DarkNightToolboxScreen() {
                                                     }
                                                 },
                                                 modifier = Modifier.weight(1f),
-                                                border = BorderStroke(1.dp, if (active) palette.primaryGlow else Color.White.copy(alpha = 0.22f)),
+                                                border = BorderStroke(1.dp, if (active) palette.primaryGlow else LocalDarkNightGlass.current.content.copy(alpha = 0.22f)),
                                             ) {
-                                                Text(sched, color = Color.White, fontSize = 11.sp, maxLines = 1)
+                                                Text(sched, color = LocalDarkNightGlass.current.content, fontSize = 11.sp, maxLines = 1)
                                             }
                                         }
                                     }
@@ -589,10 +588,10 @@ fun DarkNightToolboxScreen() {
                         }
 
                         DarkNightGlassCard(palette = palette, useBlur = false) {
-                            Text("TCP Congestion Control", color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+                            Text("TCP Congestion Control", color = LocalDarkNightGlass.current.content, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
                             Text("Active: ${kernelTweaks.tcpCurrent}", color = palette.secondaryGlow, fontSize = 13.sp)
                             if (kernelTweaks.tcpAvailable.isEmpty()) {
-                                Text("No TCP algorithms readable.", color = Color.White.copy(alpha = 0.65f), fontSize = 12.sp)
+                                Text("No TCP algorithms readable.", color = LocalDarkNightGlass.current.contentSecondary, fontSize = 12.sp)
                             } else {
                                 kernelTweaks.tcpAvailable.chunked(3).forEach { rowItems ->
                                     Row(
@@ -608,9 +607,9 @@ fun DarkNightToolboxScreen() {
                                                     }
                                                 },
                                                 modifier = Modifier.weight(1f),
-                                                border = BorderStroke(1.dp, if (active) palette.primaryGlow else Color.White.copy(alpha = 0.22f)),
+                                                border = BorderStroke(1.dp, if (active) palette.primaryGlow else LocalDarkNightGlass.current.content.copy(alpha = 0.22f)),
                                             ) {
-                                                Text(algo, color = Color.White, fontSize = 11.sp, maxLines = 1)
+                                                Text(algo, color = LocalDarkNightGlass.current.content, fontSize = 11.sp, maxLines = 1)
                                             }
                                         }
                                     }

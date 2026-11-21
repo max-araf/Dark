@@ -44,6 +44,9 @@ import androidx.compose.ui.unit.sp
 import com.kazesu.manager.R
 import com.kazesu.manager.ui.theme.DarkNightBlurQuality
 import com.kazesu.manager.ui.theme.DarkNightDockStyle
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.kazesu.manager.ui.theme.DarkNightThemeStore
 import com.kazesu.manager.ui.theme.LocalDarkNightGlass
 import top.yukonga.miuix.kmp.blur.BlendColorEntry
 import top.yukonga.miuix.kmp.blur.BlurColors
@@ -81,10 +84,14 @@ fun DarkNightPillDock(
     onSelectPage: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val context = LocalContext.current
+    DarkNightThemeStore.init(context)
+    val dnState by DarkNightThemeStore.state.collectAsStateWithLifecycle()
     val glass = LocalDarkNightGlass.current
     val haptic = LocalHapticFeedback.current
     val isLight = !glass.isDark
-    val effectiveSolid = !isLight && dockStyle == DarkNightDockStyle.DARK_SOLID
+    val glassOn = dnState.glassOn
+    val effectiveSolid = !glassOn || dockStyle == DarkNightDockStyle.DARK_SOLID
     val showHalo = !effectiveSolid
 
     val itemSize = 52.dp
@@ -104,7 +111,7 @@ fun DarkNightPillDock(
     )
 
     val hasRealBlur = !effectiveSolid &&
-        blurQuality != DarkNightBlurQuality.OFF &&
+        glassOn &&
         backdrop != null &&
         isRenderEffectSupported()
 
@@ -156,19 +163,31 @@ fun DarkNightPillDock(
             Box(
                 modifier = Modifier
                     .shadow(
-                        elevation = if (isLight) 14.dp else 18.dp,
+                        elevation = if (isLight) 20.dp else 18.dp,
                         shape = dockShape,
-                        ambientColor = if (isLight) glass.accentDark.copy(alpha = 0.18f) else Color.Black.copy(alpha = 0.45f),
-                        spotColor = if (isLight) glass.accentDark.copy(alpha = 0.18f) else Color.Black.copy(alpha = 0.45f),
+                        ambientColor = if (isLight) glass.accent.copy(alpha = 0.35f) else Color.Black.copy(alpha = 0.45f),
+                        spotColor = if (isLight) glass.accent.copy(alpha = 0.35f) else Color.Black.copy(alpha = 0.45f),
                     )
                     .then(blurMod)
                     .clip(dockShape)
                     .drawBehind {
                         when {
+                            effectiveSolid && isLight -> {
+                                drawRect(Color.White)
+                            }
+                            effectiveSolid && !isLight -> {
+                                drawRect(if (dnState.amoledBlack) Color.Black else Color(0xFF0E1424))
+                            }
                             isLight -> {
                                 drawRect(
-                                    brush = Brush.verticalGradient(
-                                        listOf(Color.White.copy(alpha = 0.82f), Color.White.copy(alpha = 0.50f))
+                                    brush = Brush.linearGradient(
+                                        colorStops = arrayOf(
+                                            0.00f to Color.White.copy(alpha = 0.62f),
+                                            0.60f to Color.White.copy(alpha = 0.28f),
+                                            1.00f to glass.accent.copy(alpha = 0.28f),
+                                        ),
+                                        start = Offset(0f, 0f),
+                                        end = Offset(size.width * 0.35f, size.height),
                                     )
                                 )
                             }
