@@ -3,13 +3,9 @@ package com.kazesu.manager.ui.component
 import android.os.Build
 import android.system.Os
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -30,6 +26,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
@@ -37,18 +34,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.DeveloperMode
-import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.filled.Extension
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Memory
-import androidx.compose.material.icons.filled.Palette
-import androidx.compose.material.icons.filled.RestartAlt
-import androidx.compose.material.icons.filled.Security
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
@@ -62,15 +47,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -79,9 +66,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.lerp
 import androidx.compose.ui.unit.sp
 import com.kazesu.manager.R
 import com.kazesu.manager.ui.theme.DarkNightPalette
+import com.kazesu.manager.ui.theme.DarkNightPalettes
 import com.kazesu.manager.ui.theme.DarkNightToastManager
 import com.kazesu.manager.ui.util.getSELinuxStatusRaw
 import com.kazesu.manager.ui.util.reboot
@@ -92,9 +81,10 @@ import top.yukonga.miuix.kmp.blur.textureBlur
 import top.yukonga.miuix.kmp.shader.isRenderEffectSupported
 
 /**
- * Reusable DarkNight Liquid Glass surface modifier matching darknight_glass_nav.png:
- * - Real GPU textureBlur (26f) on API 31+ when backdrop is available, higher-opacity fallback on API <31
- * - 165-deg dark-to-accent gradient + bottom-right radial highlight + diagonal sheen + 1dp gradient rim
+ * Reusable DarkNight Liquid Glass surface modifier (FIX-C1):
+ * - Real GPU textureBlur (26f) on API 31+, translucent fallback on API < 31
+ * - Palette-tinted 1dp gradient border (lite 40% -> 7% -> 16%, neutral capped at 30%; NEVER pure white)
+ * - 165-deg dark-to-accent gradient + bottom-right radial highlight + diagonal sheen + top 1dp highlight
  */
 @Composable
 fun Modifier.darkNightGlass(
@@ -104,9 +94,12 @@ fun Modifier.darkNightGlass(
 ): Modifier {
     val accent = palette.primaryGlow
     val lite = palette.secondaryGlow
+    val isNeutral = palette.id == DarkNightPalettes.RoyalCharcoal.id
+    val borderTint = if (isNeutral) lerp(lite, accent, 0.4f) else lite
+    val maxBorderAlpha = if (isNeutral) 0.28f else 0.40f
+
     val hasRealBlur = backdrop != null && isRenderEffectSupported()
     val alphaBoost = if (hasRealBlur) 0f else 0.15f
-    // Bright palettes (Amber Glow, Mint Aurora, Golden Bronze) need deeper dark scrim for legibility
     val isBrightAccent = accent.luminance() > 0.45f
     val topDarkAlpha = (if (isBrightAccent) 0.90f else 0.80f + alphaBoost).coerceAtMost(0.96f)
     val midDarkAlpha = (if (isBrightAccent) 0.62f else 0.44f + alphaBoost).coerceAtMost(0.88f)
@@ -131,7 +124,6 @@ fun Modifier.darkNightGlass(
     return baseBlur
         .clip(shape)
         .drawBehind {
-            // 165-degree dark -> tint -> accent gradient
             drawRect(
                 brush = Brush.linearGradient(
                     colorStops = arrayOf(
@@ -144,7 +136,6 @@ fun Modifier.darkNightGlass(
                     end = Offset(size.width * 0.35f, size.height),
                 )
             )
-            // Bottom-right radial highlight
             drawRect(
                 brush = Brush.radialGradient(
                     colors = listOf(lite.copy(alpha = 0.28f), Color.Transparent),
@@ -152,11 +143,10 @@ fun Modifier.darkNightGlass(
                     radius = size.width * 1.1f,
                 )
             )
-            // Diagonal glass sheen overlay (top-left -> 46%)
             drawRect(
                 brush = Brush.linearGradient(
                     colorStops = arrayOf(
-                        0.00f to Color.White.copy(alpha = 0.16f),
+                        0.00f to Color.White.copy(alpha = 0.14f),
                         0.46f to Color.Transparent,
                     ),
                     start = Offset(0f, 0f),
@@ -167,7 +157,11 @@ fun Modifier.darkNightGlass(
         .border(
             width = 1.dp,
             brush = Brush.linearGradient(
-                colors = listOf(lite.copy(alpha = 0.55f), lite.copy(alpha = 0.15f)),
+                colorStops = arrayOf(
+                    0.00f to borderTint.copy(alpha = maxBorderAlpha),
+                    0.55f to borderTint.copy(alpha = 0.07f),
+                    1.00f to borderTint.copy(alpha = 0.16f),
+                ),
                 start = Offset(0f, 0f),
                 end = Offset(400f, 900f),
             ),
@@ -175,9 +169,8 @@ fun Modifier.darkNightGlass(
         )
         .drawWithContent {
             drawContent()
-            // 1dp inner top specular highlight
             drawLine(
-                color = Color.White.copy(alpha = 0.22f),
+                color = Color.White.copy(alpha = 0.18f),
                 start = Offset(size.width * 0.12f, 1.dp.toPx()),
                 end = Offset(size.width * 0.88f, 1.dp.toPx()),
                 strokeWidth = 1.dp.toPx(),
@@ -247,29 +240,29 @@ fun DarkNightGlassSidebarOverlay(
         else -> "home"
     }
 
+    val isNeutral = palette.id == DarkNightPalettes.RoyalCharcoal.id
+    val borderTint = if (isNeutral) lerp(palette.secondaryGlow, palette.primaryGlow, 0.4f) else palette.secondaryGlow
+
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val expandedWidth = (maxWidth * 0.80f).coerceAtMost(300.dp)
-        val sidebarWidth: Dp by animateDpAsState(
-            targetValue = if (expanded) expandedWidth else 56.dp,
+
+        // Single progress (0..1) driving zero-reflow morph (FIX-C2)
+        val progress by animateFloatAsState(
+            targetValue = if (expanded) 1f else 0f,
             animationSpec = if (animationsEnabled) {
                 spring(dampingRatio = 0.80f, stiffness = 380f)
             } else {
                 tween(0)
             },
-            label = "sidebar_width",
-        )
-        val cornerRadius: Dp by animateDpAsState(
-            targetValue = if (expanded) 32.dp else 28.dp,
-            animationSpec = if (animationsEnabled) tween(220) else tween(0),
-            label = "sidebar_corner",
-        )
-        val scrimAlpha by animateFloatAsState(
-            targetValue = if (expanded) 0.34f else 0f,
-            animationSpec = if (animationsEnabled) tween(220) else tween(0),
-            label = "sidebar_scrim",
+            label = "sidebar_morph_progress",
         )
 
-        // Tap-to-dismiss dark scrim behind expanded drawer
+        val sidebarWidth = lerp(56.dp, expandedWidth, progress)
+        val cornerRadius = lerp(28.dp, 32.dp, progress)
+        val startMargin = lerp(10.dp, 12.dp, progress)
+        val scrimAlpha = 0.34f * progress
+
+        // Scrim behind expanded drawer
         if (scrimAlpha > 0.01f) {
             Box(
                 modifier = Modifier
@@ -285,37 +278,38 @@ fun DarkNightGlassSidebarOverlay(
                 .align(Alignment.CenterStart)
                 .statusBarsPadding()
                 .navigationBarsPadding()
-                .padding(
-                    start = if (expanded) 12.dp else 10.dp,
-                    top = if (expanded) 6.dp else 8.dp,
-                    bottom = if (expanded) 6.dp else 8.dp,
-                )
+                .padding(start = startMargin, top = 8.dp, bottom = 8.dp)
                 .width(sidebarWidth)
                 .fillMaxHeight()
                 .darkNightGlass(shape = shape, palette = palette, backdrop = backdrop)
+                .clipToBounds()
                 .pointerInput(expanded) {
                     detectHorizontalDragGestures { _, dragAmount ->
                         if (!expanded && dragAmount > 18f) expanded = true
                         if (expanded && dragAmount < -18f) expanded = false
                     }
-                }
+                },
+            contentAlignment = Alignment.TopStart,
         ) {
-            if (!expanded) {
-                // COLLAPSED RAIL (Panel 1 of darknight_glass_nav.png)
+            // LAYER 1: Collapsed Rail (fixed 56dp, fades out cleanly on expand)
+            val railAlpha = (1f - progress * 2.1f).coerceIn(0f, 1f)
+            if (railAlpha > 0.01f) {
                 Column(
                     modifier = Modifier
-                        .fillMaxSize()
+                        .requiredWidth(56.dp)
+                        .fillMaxHeight()
+                        .graphicsLayer { alpha = railAlpha }
                         .padding(top = 14.dp, bottom = 10.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    // App Logo (36dp fixed square, radius 11dp) -> tap expands drawer
+                    // Fixed 36x36dp square logo (never stretches!)
                     Image(
                         painter = painterResource(R.drawable.ic_launcher_darknight_full),
                         contentDescription = stringResource(R.string.app_name),
                         modifier = Modifier
                             .size(36.dp)
                             .clip(RoundedCornerShape(11.dp))
-                            .clickable { expanded = true },
+                            .clickable(enabled = !expanded) { expanded = true },
                         contentScale = ContentScale.Crop,
                     )
 
@@ -323,7 +317,6 @@ fun DarkNightGlassSidebarOverlay(
                     GlassDivider(width = 28.dp)
                     Spacer(modifier = Modifier.height(10.dp))
 
-                    // 5 Main Menu items
                     Column(
                         verticalArrangement = Arrangement.spacedBy(6.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -333,6 +326,7 @@ fun DarkNightGlassSidebarOverlay(
                                 item = item,
                                 selected = item.id == selectedId,
                                 palette = palette,
+                                enabled = !expanded,
                                 onClick = { item.onClick() },
                             )
                         }
@@ -342,7 +336,6 @@ fun DarkNightGlassSidebarOverlay(
                     GlassDivider(width = 28.dp)
                     Spacer(modifier = Modifier.height(10.dp))
 
-                    // Bottom shortcuts: Theme, Settings
                     Column(
                         verticalArrangement = Arrangement.spacedBy(6.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -351,26 +344,27 @@ fun DarkNightGlassSidebarOverlay(
                             item = systemItems[0],
                             selected = false,
                             palette = palette,
+                            enabled = !expanded,
                             onClick = { systemItems[0].onClick() },
                         )
                         RailIconButton(
                             item = systemItems[2],
                             selected = selectedId == "settings",
                             palette = palette,
+                            enabled = !expanded,
                             onClick = { systemItems[2].onClick() },
                         )
                     }
 
                     Spacer(modifier = Modifier.height(10.dp))
 
-                    // Bottom avatar/logo circle (38dp) -> About
                     Box(
                         modifier = Modifier
                             .size(38.dp)
                             .clip(CircleShape)
                             .background(Color(0x99040710))
-                            .border(1.dp, palette.secondaryGlow.copy(alpha = 0.45f), CircleShape)
-                            .clickable { onOpenAbout() },
+                            .border(1.dp, palette.secondaryGlow.copy(alpha = 0.55f), CircleShape)
+                            .clickable(enabled = !expanded) { onOpenAbout() },
                         contentAlignment = Alignment.Center,
                     ) {
                         Text(
@@ -378,21 +372,28 @@ fun DarkNightGlassSidebarOverlay(
                             color = palette.secondaryGlow,
                             fontWeight = FontWeight.Bold,
                             fontSize = 18.sp,
+                            maxLines = 1,
+                            softWrap = false,
                         )
                     }
                 }
-            } else {
-                // EXPANDED DRAWER (Panels 2 & 3 of darknight_glass_nav.png)
+            }
+
+            // LAYER 2: Expanded Drawer (ALWAYS requiredWidth(expandedWidth), clipped by outer container -> ZERO text reflow!)
+            val drawerAlpha = ((progress - 0.35f) / 0.65f).coerceIn(0f, 1f)
+            if (drawerAlpha > 0.01f) {
                 Column(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 14.dp, vertical = 16.dp),
+                        .requiredWidth(expandedWidth)
+                        .fillMaxHeight()
+                        .graphicsLayer { alpha = drawerAlpha }
+                        .padding(horizontal = 14.dp, vertical = 14.dp),
                 ) {
-                    // Header
+                    // Fixed Header
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { expanded = false }
+                            .clickable(enabled = expanded) { expanded = false }
                             .padding(horizontal = 4.dp, vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -402,7 +403,7 @@ fun DarkNightGlassSidebarOverlay(
                             contentDescription = stringResource(R.string.app_name),
                             modifier = Modifier
                                 .size(44.dp)
-                                .clip(RoundedCornerShape(14.dp)),
+                                .clip(RoundedCornerShape(13.dp)),
                             contentScale = ContentScale.Crop,
                         )
                         Column(modifier = Modifier.weight(1f)) {
@@ -412,27 +413,30 @@ fun DarkNightGlassSidebarOverlay(
                                 fontSize = 21.sp,
                                 fontWeight = FontWeight.Bold,
                                 maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
+                                softWrap = false,
+                                overflow = TextOverflow.Clip,
                             )
                             Text(
                                 text = stringResource(R.string.darknight_subtitle),
                                 color = Color.White.copy(alpha = 0.65f),
                                 fontSize = 11.sp,
                                 maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
+                                softWrap = false,
+                                overflow = TextOverflow.Clip,
                             )
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(12.dp))
-                    GlassDivider(modifier = Modifier.fillMaxWidth())
                     Spacer(modifier = Modifier.height(10.dp))
+                    GlassDivider(modifier = Modifier.fillMaxWidth())
+                    Spacer(modifier = Modifier.height(8.dp))
 
+                    // Scrollable MENU + SYSTEM list (FIX-C3: weight(1f) so footer never clips "Reboot options")
                     Column(
                         modifier = Modifier
                             .weight(1f)
                             .verticalScroll(rememberScrollState()),
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalArrangement = Arrangement.spacedBy(3.dp),
                     ) {
                         Text(
                             text = stringResource(R.string.darknight_nav_section_menu),
@@ -440,6 +444,9 @@ fun DarkNightGlassSidebarOverlay(
                             fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold,
                             letterSpacing = 1.6.sp,
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = TextOverflow.Clip,
                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                         )
 
@@ -448,6 +455,7 @@ fun DarkNightGlassSidebarOverlay(
                                 item = item,
                                 selected = item.id == selectedId,
                                 palette = palette,
+                                enabled = expanded,
                                 onClick = {
                                     expanded = false
                                     item.onClick()
@@ -455,9 +463,9 @@ fun DarkNightGlassSidebarOverlay(
                             )
                         }
 
-                        Spacer(modifier = Modifier.height(10.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
                         GlassDivider(modifier = Modifier.fillMaxWidth())
-                        Spacer(modifier = Modifier.height(10.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
 
                         Text(
                             text = stringResource(R.string.darknight_nav_section_system),
@@ -465,6 +473,9 @@ fun DarkNightGlassSidebarOverlay(
                             fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold,
                             letterSpacing = 1.6.sp,
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = TextOverflow.Clip,
                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                         )
 
@@ -473,6 +484,7 @@ fun DarkNightGlassSidebarOverlay(
                                 item = item,
                                 selected = item.id == selectedId,
                                 palette = palette,
+                                enabled = expanded,
                                 onClick = {
                                     expanded = false
                                     item.onClick()
@@ -483,18 +495,18 @@ fun DarkNightGlassSidebarOverlay(
 
                     Spacer(modifier = Modifier.height(10.dp))
 
-                    // Footer Device + Kernel card -> About
+                    // Fixed Footer Device + Kernel card (palette-tinted border, NEVER white!)
                     Surface(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(18.dp))
-                            .clickable {
+                            .clickable(enabled = expanded) {
                                 expanded = false
                                 onOpenAbout()
                             },
                         shape = RoundedCornerShape(18.dp),
                         color = Color(0x66040710),
-                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.14f)),
+                        border = BorderStroke(1.dp, borderTint.copy(alpha = 0.28f)),
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
@@ -506,7 +518,7 @@ fun DarkNightGlassSidebarOverlay(
                                     .size(34.dp)
                                     .clip(CircleShape)
                                     .background(palette.primaryGlow.copy(alpha = 0.25f))
-                                    .border(1.dp, palette.secondaryGlow.copy(alpha = 0.5f), CircleShape),
+                                    .border(1.dp, palette.secondaryGlow.copy(alpha = 0.55f), CircleShape),
                                 contentAlignment = Alignment.Center,
                             ) {
                                 Text("#", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
@@ -518,6 +530,7 @@ fun DarkNightGlassSidebarOverlay(
                                     fontWeight = FontWeight.SemiBold,
                                     fontSize = 13.sp,
                                     maxLines = 1,
+                                    softWrap = false,
                                     overflow = TextOverflow.Ellipsis,
                                 )
                                 Text(
@@ -525,6 +538,7 @@ fun DarkNightGlassSidebarOverlay(
                                     color = Color.White.copy(alpha = 0.62f),
                                     fontSize = 10.sp,
                                     maxLines = 1,
+                                    softWrap = false,
                                     overflow = TextOverflow.Ellipsis,
                                 )
                             }
@@ -580,6 +594,7 @@ private fun RailIconButton(
     item: SidebarMenuItem,
     selected: Boolean,
     palette: DarkNightPalette,
+    enabled: Boolean,
     onClick: () -> Unit,
 ) {
     val pillShape = RoundedCornerShape(15.dp)
@@ -589,18 +604,25 @@ private fun RailIconButton(
             .height(42.dp),
         contentAlignment = Alignment.Center,
     ) {
-        // Left edge 3.5dp x 24dp white indicator bar on selected item
+        // FIX-C1: Palette lite indicator bar (3.5dp x 24dp) with lite @ 90% glow
         if (selected) {
             Box(
                 modifier = Modifier
                     .align(Alignment.CenterStart)
                     .width(3.5.dp)
                     .height(24.dp)
+                    .shadow(
+                        elevation = 10.dp,
+                        shape = RoundedCornerShape(topEnd = 4.dp, bottomEnd = 4.dp),
+                        ambientColor = palette.secondaryGlow.copy(alpha = 0.90f),
+                        spotColor = palette.secondaryGlow.copy(alpha = 0.90f),
+                    )
                     .clip(RoundedCornerShape(topEnd = 4.dp, bottomEnd = 4.dp))
-                    .background(Color.White)
+                    .background(palette.secondaryGlow)
             )
         }
 
+        // FIX-C1: Selected pill has NO border, only fill gradient + top 1dp inner highlight
         Box(
             modifier = Modifier
                 .size(42.dp)
@@ -610,15 +632,23 @@ private fun RailIconButton(
                         Modifier
                             .background(
                                 Brush.verticalGradient(
-                                    listOf(Color.White.copy(alpha = 0.26f), Color.White.copy(alpha = 0.08f))
+                                    listOf(Color.White.copy(alpha = 0.22f), Color.White.copy(alpha = 0.06f))
                                 )
                             )
-                            .border(1.dp, Color.White.copy(alpha = 0.28f), pillShape)
+                            .drawWithContent {
+                                drawContent()
+                                drawLine(
+                                    color = Color.White.copy(alpha = 0.20f),
+                                    start = Offset(size.width * 0.16f, 1.dp.toPx()),
+                                    end = Offset(size.width * 0.84f, 1.dp.toPx()),
+                                    strokeWidth = 1.dp.toPx(),
+                                )
+                            }
                     } else {
                         Modifier
                     }
                 )
-                .clickable(onClick = onClick),
+                .clickable(enabled = enabled, onClick = onClick),
             contentAlignment = Alignment.Center,
         ) {
             Box(contentAlignment = Alignment.Center) {
@@ -646,6 +676,7 @@ private fun RailIconButton(
                             fontSize = 9.5.sp,
                             fontWeight = FontWeight.Bold,
                             maxLines = 1,
+                            softWrap = false,
                         )
                     }
                 }
@@ -659,13 +690,14 @@ private fun DrawerMenuRow(
     item: SidebarMenuItem,
     selected: Boolean,
     palette: DarkNightPalette,
+    enabled: Boolean,
     onClick: () -> Unit,
 ) {
     val pillShape = RoundedCornerShape(16.dp)
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(46.dp),
+            .height(45.dp),
         contentAlignment = Alignment.CenterStart,
     ) {
         if (selected) {
@@ -675,11 +707,18 @@ private fun DrawerMenuRow(
                     .offset(x = (-14).dp)
                     .width(3.5.dp)
                     .height(24.dp)
+                    .shadow(
+                        elevation = 10.dp,
+                        shape = RoundedCornerShape(topEnd = 4.dp, bottomEnd = 4.dp),
+                        ambientColor = palette.secondaryGlow.copy(alpha = 0.90f),
+                        spotColor = palette.secondaryGlow.copy(alpha = 0.90f),
+                    )
                     .clip(RoundedCornerShape(topEnd = 4.dp, bottomEnd = 4.dp))
-                    .background(Color.White)
+                    .background(palette.secondaryGlow)
             )
         }
 
+        // FIX-C1: Selected pill has NO border, only fill gradient + top 1dp inner highlight
         Row(
             modifier = Modifier
                 .fillMaxSize()
@@ -689,15 +728,23 @@ private fun DrawerMenuRow(
                         Modifier
                             .background(
                                 Brush.horizontalGradient(
-                                    listOf(Color.White.copy(alpha = 0.24f), Color.White.copy(alpha = 0.08f))
+                                    listOf(Color.White.copy(alpha = 0.22f), Color.White.copy(alpha = 0.06f))
                                 )
                             )
-                            .border(1.dp, Color.White.copy(alpha = 0.25f), pillShape)
+                            .drawWithContent {
+                                drawContent()
+                                drawLine(
+                                    color = Color.White.copy(alpha = 0.20f),
+                                    start = Offset(size.width * 0.06f, 1.dp.toPx()),
+                                    end = Offset(size.width * 0.94f, 1.dp.toPx()),
+                                    strokeWidth = 1.dp.toPx(),
+                                )
+                            }
                     } else {
                         Modifier
                     }
                 )
-                .clickable(onClick = onClick)
+                .clickable(enabled = enabled, onClick = onClick)
                 .padding(horizontal = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -714,7 +761,8 @@ private fun DrawerMenuRow(
                 fontSize = 15.sp,
                 fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
+                softWrap = false,
+                overflow = TextOverflow.Clip,
                 modifier = Modifier.weight(1f),
             )
             if (selected) {
@@ -735,10 +783,12 @@ private fun DrawerMenuRow(
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = if (item.badgeCount > 99) "99" else item.badgeCount.toString(),
+                        text = if (item.badgeCount > 99) "99+" else item.badgeCount.toString(),
                         color = Color.White,
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        softWrap = false,
                     )
                 }
             }
@@ -757,7 +807,7 @@ private fun GlassDivider(
             .height(1.dp)
             .background(
                 Brush.horizontalGradient(
-                    listOf(Color.Transparent, Color.White.copy(alpha = 0.24f), Color.Transparent)
+                    listOf(Color.Transparent, Color.White.copy(alpha = 0.22f), Color.Transparent)
                 )
             )
     )
