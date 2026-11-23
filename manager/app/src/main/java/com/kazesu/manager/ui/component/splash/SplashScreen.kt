@@ -28,6 +28,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -54,13 +55,25 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kazesu.manager.R
 import com.kazesu.manager.ui.theme.DarkNightThemeStore
+import android.os.Build
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeoutOrNull
+import kotlin.math.floor
+import kotlin.math.roundToInt
 import kotlin.math.PI
 import kotlin.math.pow
 import kotlin.math.sin
 import kotlin.time.Duration.Companion.milliseconds
 
 private const val EXIT_DURATION_MS = 320
+private const val LOGO_END_MS = 1000f      // system-splash AVD ends here (final pose)
+private const val LOGO_TOTAL_MS = 1400f    // + shine sweep & wordmark (Compose only)
+private const val ORBIT_START_MS = 360f
+private const val ORBIT_END_MS = 960f      // 4 legs x 150ms
+private const val ORBIT_DX = 382.5f        // design-space (1000) distance, left/right leg
+private const val ORBIT_DY = 402.5f        // design-space (1000) distance, up/down leg
+private const val SPLASH_MAX_WAIT_MS = 2000L
 
 private fun seg(t: Float, a: Float, b: Float): Float = ((t - a) / (b - a)).coerceIn(0f, 1f)
 private fun easeOutCubic(x: Float): Float = 1f - (1f - x).pow(3)
@@ -84,62 +97,51 @@ fun DarkNightLogoAnimated(
     Canvas(modifier = modifier.size(size)) {
         val s = this.size.minDimension
         val u = s / 1000f // 1000x1000 design coordinate space
-        val t = progressMs.coerceIn(0f, 1000f)
+        val t = progressMs.coerceIn(0f, LOGO_TOTAL_MS)
 
-        val pOuter = seg(t, 0f, 340f)
-        val outerOp = easeOutCubic(seg(t, 0f, 200f))
+        val pOuter = seg(t, 0f, 300f)
+        val outerOp = easeOutCubic(seg(t, 0f, 180f))
         val outerS = lerpF(0.70f, 1f, easeOutBack(pOuter))
 
-        val pFrame = seg(t, 100f, 420f)
+        val pFrame = seg(t, 80f, 340f)
         val frameOp = easeOutCubic(pFrame)
         val frameS = lerpF(0.88f, 1f, easeOutCubic(pFrame))
 
-        val pInner = seg(t, 200f, 520f)
+        val pInner = seg(t, 160f, 420f)
         val innerOp = easeOutCubic(pInner)
         val innerS = lerpF(0.82f, 1f, easeOutCubic(pInner))
 
-        val pTrb = seg(t, 300f, 640f)
-        val trbOp = easeOutCubic(seg(t, 300f, 480f))
-        val trbTx = lerpF(90f, 0f, easeOutBack(pTrb)) * u
-        val trbTy = lerpF(-90f, 0f, easeOutBack(pTrb)) * u
+        // v8 ORBIT: square-pair A (top-right) goes DOWN, LEFT, UP, RIGHT and lands back HOME.
+        // Pair B (bottom-left) is point-symmetric (-A), so the two never collide.
+        val orbitP = seg(t, ORBIT_START_MS, ORBIT_END_MS) * 4f
+        val legI = floor(orbitP).toInt().coerceIn(0, 3)
+        val legF = FastOutSlowInEasing.transform((orbitP - legI).coerceIn(0f, 1f))
+        var aTx = 0f
+        var aTy = 0f
+        if (orbitP < 4f) {
+            when (legI) {
+                0 -> { aTx = 0f; aTy = ORBIT_DY * legF }
+                1 -> { aTx = -ORBIT_DX * legF; aTy = ORBIT_DY }
+                2 -> { aTx = -ORBIT_DX; aTy = ORBIT_DY * (1f - legF) }
+                else -> { aTx = -ORBIT_DX * (1f - legF); aTy = 0f }
+            }
+        }
+        aTx *= u; aTy *= u
+        val bTx = -aTx
+        val bTy = -aTy
 
-        val pTrs = seg(t, 280f, 600f)
-        val trsOp = easeOutCubic(seg(t, 280f, 440f))
-        val trsTx = lerpF(120f, 0f, easeOutBack(pTrs)) * u
-        val trsTy = lerpF(-120f, 0f, easeOutBack(pTrs)) * u
+        val popA = easeOutCubic(seg(t, 220f, 400f))
+        val popB = easeOutCubic(seg(t, 250f, 430f))
+        val trbOp = popA; val trsOp = popA
+        val blbOp = popB; val blsOp = popB
+        val trbTx = aTx; val trbTy = aTy; val trsTx = aTx; val trsTy = aTy
+        val blbTx = bTx; val blbTy = bTy; val blsTx = bTx; val blsTy = bTy
 
-        val pBlb = seg(t, 330f, 670f)
-        val blbOp = easeOutCubic(seg(t, 330f, 510f))
-        val blbTx = lerpF(-90f, 0f, easeOutBack(pBlb)) * u
-        val blbTy = lerpF(90f, 0f, easeOutBack(pBlb)) * u
-
-        val pBls = seg(t, 310f, 630f)
-        val blsOp = easeOutCubic(seg(t, 310f, 470f))
-        val blsTx = lerpF(-120f, 0f, easeOutBack(pBls)) * u
-        val blsTy = lerpF(120f, 0f, easeOutBack(pBls)) * u
-
-        val pShine = seg(t, 620f, 1000f)
+        val pShine = seg(t, 1000f, 1380f)
         val shineX = lerpF(-500f, 1400f, pShine) * u
         val shineOp = if (pShine <= 0f || pShine >= 1f) 0f else sin(PI.toFloat() * pShine)
 
-        val pRing = seg(t, 700f, 1000f)
-        val ringS = lerpF(1f, 1.38f, easeOutCubic(pRing))
-        val ringOp = if (pRing <= 0f || pRing >= 1f) 0f else 0.55f * (1f - pRing)
-
         val pivot = Offset(s / 2f, s / 2f)
-
-        // 1. Expanding Ring Pulse (700..1000ms)
-        if (ringOp > 0.01f) {
-            withTransform({ scale(ringS, ringS, pivot) }) {
-                drawRoundRect(
-                    color = Color(0xFF5CC8FF).copy(alpha = ringOp),
-                    topLeft = Offset.Zero,
-                    size = Size(s, s),
-                    cornerRadius = CornerRadius(85f * u, 85f * u),
-                    style = Stroke(width = 6f * u),
-                )
-            }
-        }
 
         // 2. Outer Glass Squircle (0..340ms)
         if (outerOp > 0.01f) {
@@ -296,37 +298,40 @@ fun SplashScreen(
     DarkNightThemeStore.init(context)
     val dnState by DarkNightThemeStore.state.collectAsStateWithLifecycle()
     val currentOnDismissed by rememberUpdatedState(onDismissed)
+    // BUGFIX (v8): isReady flips to true during the animation. A plain captured value inside
+    // LaunchedEffect(Unit) stays stale (false) forever -> splash never dismissed. Always read the live value.
+    val currentIsReady by rememberUpdatedState(isReady)
 
     var exitTriggered by remember { mutableStateOf(false) }
     var splashDismissed by remember { mutableStateOf(false) }
 
     val animEnabled = dnState.startupAnimEnabled
-    val progressMs = remember { Animatable(if (animEnabled) 0f else 1000f) }
-    val wordmarkProgress = remember { Animatable(if (animEnabled) 0f else 1f) }
+    // Android 12+: system splash AVD already played 0..1000ms -> Compose starts from the final pose.
+    val startMs = when {
+        !animEnabled -> LOGO_END_MS
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> LOGO_END_MS
+        else -> 0f
+    }
+    val timeline = remember { Animatable(startMs) }
+    val wm = easeOutCubic(seg(timeline.value, LOGO_END_MS, LOGO_TOTAL_MS))
+    val wordmarkProgress = if (animEnabled) wm else 1f
 
     LaunchedEffect(Unit) {
         if (animEnabled) {
-            progressMs.animateTo(1000f, animationSpec = tween(durationMillis = 1000, easing = LinearEasing))
-            wordmarkProgress.animateTo(1f, animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing))
-            delay(260.milliseconds)
+            val remaining = (LOGO_TOTAL_MS - startMs).roundToInt().coerceAtLeast(1)
+            timeline.animateTo(LOGO_TOTAL_MS, animationSpec = tween(durationMillis = remaining, easing = LinearEasing))
+            delay(200.milliseconds)
         } else {
             delay(300.milliseconds)
         }
-        if (isReady) {
-            exitTriggered = true
-            delay((EXIT_DURATION_MS.toLong() + 20L).milliseconds)
-            splashDismissed = true
-            currentOnDismissed()
+        // Wait for the app to be ready, but NEVER block longer than SPLASH_MAX_WAIT_MS.
+        withTimeoutOrNull(SPLASH_MAX_WAIT_MS) {
+            snapshotFlow { currentIsReady }.first { it }
         }
-    }
-
-    LaunchedEffect(isReady) {
-        if (isReady && wordmarkProgress.value >= 0.99f && !exitTriggered) {
-            exitTriggered = true
-            delay((EXIT_DURATION_MS.toLong() + 20L).milliseconds)
-            splashDismissed = true
-            currentOnDismissed()
-        }
+        exitTriggered = true
+        delay((EXIT_DURATION_MS.toLong() + 20L).milliseconds)
+        splashDismissed = true
+        currentOnDismissed()
     }
 
     if (splashDismissed) return
@@ -350,7 +355,7 @@ fun SplashScreen(
             Canvas(modifier = Modifier.size(320.dp)) {
                 drawCircle(
                     brush = Brush.radialGradient(
-                        listOf(dnState.palette.primaryGlow.copy(alpha = 0.35f * wordmarkProgress.value), Color.Transparent),
+                        listOf(dnState.palette.primaryGlow.copy(alpha = 0.35f * wordmarkProgress), Color.Transparent),
                         center = Offset(size.width / 2f, size.height / 2f),
                         radius = size.minDimension / 2f,
                     )
@@ -363,19 +368,19 @@ fun SplashScreen(
                 modifier = Modifier.padding(horizontal = 24.dp),
             ) {
                 DarkNightLogoAnimated(
-                    progressMs = progressMs.value,
+                    progressMs = timeline.value,
                     size = 132.dp,
                 )
                 Spacer(modifier = Modifier.height(22.dp))
-                val wm = wordmarkProgress.value
+                val wmv = wordmarkProgress
                 Text(
                     text = stringResource(R.string.app_name),
                     color = Color.White,
                     fontSize = 26.sp,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier
-                        .offset(y = (14f * (1f - wm)).dp)
-                        .alpha(wm),
+                        .offset(y = (14f * (1f - wmv)).dp)
+                        .alpha(wmv),
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
@@ -383,8 +388,8 @@ fun SplashScreen(
                     color = Color.White.copy(alpha = 0.60f),
                     fontSize = 13.sp,
                     modifier = Modifier
-                        .offset(y = (10f * (1f - wm)).dp)
-                        .alpha(wm),
+                        .offset(y = (10f * (1f - wmv)).dp)
+                        .alpha(wmv),
                 )
             }
         }
