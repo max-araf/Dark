@@ -109,15 +109,10 @@ fun Modifier.darkNightGlass(
     DarkNightThemeStore.init(navCtx)
     val navDnState by DarkNightThemeStore.state.collectAsStateWithLifecycle()
     if (!navDnState.glassOn) {
-        val solidBg = if (glass.isDark) {
-            if (navDnState.amoledBlack) Color.Black else Color(0xFF0E1424)
-        } else {
-            Color.White
-        }
         return this
             .clip(shape)
-            .background(solidBg)
-            .border(1.dp, glass.accent.copy(alpha = 0.25f), shape)
+            .background(glass.surfaceHi)
+            .border(1.dp, glass.outline, shape)
     }
     val hasRealBlur = backdrop != null && isRenderEffectSupported()
     val alphaBoost = if (hasRealBlur) 0f else 0.15f

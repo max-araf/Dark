@@ -55,39 +55,12 @@ fun DarkNightSwitch(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
 ) {
-    val glass = LocalDarkNightGlass.current
-    val accent = darkNightEffectiveAccent()
-    val uiMode = LocalUiMode.current
-
-    if (uiMode == UiMode.Miuix) {
-        MiuixSwitch(
-            checked = checked,
-            onCheckedChange = onCheckedChange,
-            modifier = modifier,
-            enabled = enabled,
-            colors = MiuixSwitchDefaults.switchColors(
-                checkedThumbColor = Color.White,
-                uncheckedThumbColor = Color.White,
-                checkedTrackColor = accent,
-                uncheckedTrackColor = glass.content.copy(alpha = 0.22f),
-            ),
-        )
-    } else {
-        Switch(
-            checked = checked,
-            onCheckedChange = onCheckedChange,
-            modifier = modifier,
-            enabled = enabled,
-            colors = SwitchDefaults.colors(
-                checkedThumbColor = Color.White,
-                checkedTrackColor = accent,
-                checkedBorderColor = accent,
-                uncheckedThumbColor = glass.content.copy(alpha = 0.80f),
-                uncheckedTrackColor = glass.content.copy(alpha = 0.16f),
-                uncheckedBorderColor = glass.content.copy(alpha = 0.28f),
-            ),
-        )
-    }
+    DarkNightToggle(
+        checked = checked,
+        onCheckedChange = onCheckedChange,
+        modifier = modifier,
+        enabled = enabled,
+    )
 }
 
 /**

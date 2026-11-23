@@ -296,7 +296,7 @@ fun SettingPagerMiuix(
                                 )
                             },
                             endActions = {
-                                top.yukonga.miuix.kmp.basic.Switch(
+                                com.kazesu.manager.ui.component.DarkNightToggle(
                                     checked = dnState.infoBarEnabled,
                                     onCheckedChange = { com.kazesu.manager.ui.theme.DarkNightThemeStore.setInfoBarEnabled(dnContext, it) },
                                 )

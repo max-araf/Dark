@@ -104,4 +104,17 @@
     <string name="dn_status_miuix_notinstalled_label">রুট পাওয়া যায়নি</string>
     <string name="dn_bootguard_moved_title">বুটলুপ প্রোটেকশন সরানো হয়েছে</string>
     <string name="dn_bootguard_moved_summary">বুটলুপ প্রোটেকশন এখন Settings -&gt; Tools-এ আছে। খুলতে ট্যাপ করুন।</string>
+
+    <!-- DarkNightSu v6.0.0 Toggle Style Picker (merged) -->
+    <string name="toggle_style_title">টগল স্টাইল</string>
+    <string name="toggle_style_subtitle">ম্যানেজারের সব সুইচে প্রযোজ্য</string>
+    <string name="toggle_color_mode">কালার মোড</string>
+    <string name="toggle_color_follow">প্যালেট ফলো</string>
+    <string name="toggle_color_original">অরিজিনাল</string>
+    <string name="toggle_color_custom">কাস্টম</string>
+    <string name="toggle_size_title">সাইজ</string>
+    <string name="toggle_size_small">ছোট</string>
+    <string name="toggle_size_medium">মাঝারি</string>
+    <string name="toggle_size_large">বড়</string>
+    <string name="toggle_live_preview">লাইভ প্রিভিউ</string>
 </resources>

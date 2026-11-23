@@ -15,6 +15,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kazesu.manager.ui.theme.DarkNightThemeStore
 import com.kazesu.manager.ui.theme.LocalBackgroundImagePath
 import com.kazesu.manager.ui.theme.LocalDarkNightGlass
+import com.kazesu.manager.ui.theme.ProvideDarkNightContent
 import com.kazesu.manager.ui.theme.backgroundAwareCardColors
 import com.kazesu.manager.ui.theme.darkNightGlassCardSurface
 import top.yukonga.miuix.kmp.basic.Card
@@ -23,7 +24,7 @@ import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.utils.PressFeedbackType
 
 /**
- * Miuix [AppCard] with full DarkNight Frosted Glass (Dark & Light) and Aura-OFF flat solid support (B2/B6).
+ * Miuix [AppCard] with full DarkNight Frosted Glass, Flat Palette mode (PART 2), and LocalContentColor propagation (C1).
  */
 @Composable
 fun AppCard(
@@ -38,39 +39,37 @@ fun AppCard(
     val dnState by DarkNightThemeStore.state.collectAsStateWithLifecycle()
     val glass = LocalDarkNightGlass.current
     val isDarkNightAura = LocalBackgroundImagePath.current == "darknight://aura"
+    val isFlatPalette = !dnState.glassOn && LocalBackgroundImagePath.current.isEmpty()
     val shape = RoundedCornerShape(dnState.cardCornerRadiusDp.dp)
 
     val resolvedMod = when {
-        isDarkNightAura && dnState.auraEnabled -> modifier.darkNightGlassCardSurface(shape = shape)
-        !dnState.auraEnabled && LocalBackgroundImagePath.current.isEmpty() -> modifier.border(
-            1.dp,
-            glass.accent.copy(alpha = 0.22f),
-            shape,
-        )
+        isDarkNightAura && dnState.glassOn -> modifier.darkNightGlassCardSurface(shape = shape)
+        isDarkNightAura || isFlatPalette -> modifier.border(1.dp, glass.outline, shape)
         else -> modifier
     }
     val resolvedColors = when {
-        isDarkNightAura && dnState.auraEnabled -> CardDefaults.defaultColors(
+        isDarkNightAura && dnState.glassOn -> CardDefaults.defaultColors(
             color = Color.Transparent,
             contentColor = glass.content,
         )
-        !dnState.auraEnabled && LocalBackgroundImagePath.current.isEmpty() -> CardDefaults.defaultColors(
-            color = if (glass.isDark) {
-                if (dnState.amoledBlack) Color.Black else Color(0xFF0E1424)
-            } else {
-                Color.White
-            },
+        isDarkNightAura || isFlatPalette -> CardDefaults.defaultColors(
+            color = glass.surface,
             contentColor = glass.content,
         )
         else -> colors
     }
     Card(
         modifier = resolvedMod,
-        cornerRadius = if (isDarkNightAura) dnState.cardCornerRadiusDp.dp else cornerRadius,
+        cornerRadius = if (isDarkNightAura || isFlatPalette) dnState.cardCornerRadiusDp.dp else cornerRadius,
         insideMargin = insideMargin,
         colors = resolvedColors,
-        content = content,
-    )
+    ) {
+        if (isDarkNightAura || isFlatPalette) {
+            ProvideDarkNightContent { content() }
+        } else {
+            content()
+        }
+    }
 }
 
 @Composable
@@ -91,35 +90,28 @@ fun AppCard(
     val dnState by DarkNightThemeStore.state.collectAsStateWithLifecycle()
     val glass = LocalDarkNightGlass.current
     val isDarkNightAura = LocalBackgroundImagePath.current == "darknight://aura"
+    val isFlatPalette = !dnState.glassOn && LocalBackgroundImagePath.current.isEmpty()
     val shape = RoundedCornerShape(dnState.cardCornerRadiusDp.dp)
 
     val resolvedMod = when {
-        isDarkNightAura && dnState.auraEnabled -> modifier.darkNightGlassCardSurface(shape = shape)
-        !dnState.auraEnabled && LocalBackgroundImagePath.current.isEmpty() -> modifier.border(
-            1.dp,
-            glass.accent.copy(alpha = 0.22f),
-            shape,
-        )
+        isDarkNightAura && dnState.glassOn -> modifier.darkNightGlassCardSurface(shape = shape)
+        isDarkNightAura || isFlatPalette -> modifier.border(1.dp, glass.outline, shape)
         else -> modifier
     }
     val resolvedColors = when {
-        isDarkNightAura && dnState.auraEnabled -> CardDefaults.defaultColors(
+        isDarkNightAura && dnState.glassOn -> CardDefaults.defaultColors(
             color = Color.Transparent,
             contentColor = glass.content,
         )
-        !dnState.auraEnabled && LocalBackgroundImagePath.current.isEmpty() -> CardDefaults.defaultColors(
-            color = if (glass.isDark) {
-                if (dnState.amoledBlack) Color.Black else Color(0xFF0E1424)
-            } else {
-                Color.White
-            },
+        isDarkNightAura || isFlatPalette -> CardDefaults.defaultColors(
+            color = glass.surface,
             contentColor = glass.content,
         )
         else -> colors
     }
     Card(
         modifier = resolvedMod,
-        cornerRadius = if (isDarkNightAura) dnState.cardCornerRadiusDp.dp else cornerRadius,
+        cornerRadius = if (isDarkNightAura || isFlatPalette) dnState.cardCornerRadiusDp.dp else cornerRadius,
         insideMargin = insideMargin,
         colors = resolvedColors,
         pressFeedbackType = pressFeedbackType,
@@ -127,6 +119,11 @@ fun AppCard(
         holdDownState = holdDownState,
         onClick = onClick,
         onLongPress = onLongPress,
-        content = content,
-    )
+    ) {
+        if (isDarkNightAura || isFlatPalette) {
+            ProvideDarkNightContent { content() }
+        } else {
+            content()
+        }
+    }
 }

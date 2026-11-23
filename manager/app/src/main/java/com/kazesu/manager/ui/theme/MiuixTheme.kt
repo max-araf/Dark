@@ -127,19 +127,28 @@ fun MiuixKernelSUTheme(
                     disabledOnSecondaryVariant = baseColors.onSurface.copy(alpha = 0.85f),
                 )
             } else {
-                // Aura OFF: flat solid surfaces + readable text + active palette accent (B6)
-                val solidCard = if (glass.isDark) Color(0xFF0E1424) else Color.White
+                // PART 2: Flat Palette mode (palette-tinted base/surface/surfaceHi, zero neutral gray)
                 baseColors.copy(
                     primary = effectiveAccent,
                     primaryVariant = effectiveAccent,
                     onPrimary = onAccent,
                     onPrimaryVariant = onAccent,
-                    surfaceContainer = solidCard,
-                    surfaceContainerHigh = solidCard,
-                    surfaceContainerHighest = solidCard,
+                    background = glass.base,
+                    surface = glass.surface,
+                    surfaceContainer = glass.surface,
+                    surfaceContainerHigh = glass.surfaceHi,
+                    surfaceContainerHighest = glass.surfaceHi,
                     onSurface = glass.content,
                     onBackground = glass.content,
+                    onBackgroundVariant = glass.contentSecondary,
+                    onSurfaceSecondary = glass.contentSecondary,
+                    onSurfaceContainer = glass.content,
+                    onSurfaceContainerVariant = glass.contentSecondary,
+                    onSurfaceContainerHigh = glass.content,
+                    onSurfaceContainerHighest = glass.content,
                     onSurfaceVariantSummary = glass.contentSecondary,
+                    onSurfaceVariantActions = glass.contentSecondary,
+                    disabledOnSurface = glass.content.copy(alpha = 0.55f),
                 )
             }
             val overlaidColors = readableColors.withAppearance(appSettings.appearance?.colorsFor(darkTheme))

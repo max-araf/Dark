@@ -40,7 +40,11 @@ import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import com.kazesu.manager.ui.component.DarkNightSlider
 import com.kazesu.manager.ui.component.DarkNightSwitch
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -269,9 +273,75 @@ enum class DarkNightDockStyle(val id: String, val label: String) {
  * Unified Dark / Light Glass visual recipe (v4.0.0 T1).
  * Every surface, top bar, pill dock, rail, drawer, card, and text color derives from this single object.
  */
+enum class ToggleStyle(val id: Int, val displayName: String, val ratio: Float, val originalColor: Color) {
+    NEON(0, "Neon Glass", 2.6f, Color(0xFFFF6A1A)),
+    TACTILE(1, "Soft Tactile", 1.9f, Color(0xFF53D24B)),
+    HARDWARE(2, "Hardware LED", 2.6f, Color(0xFFB8F20A)),
+    CLASSIC(3, "Classic ON/OFF", 2.0f, Color(0xFF5BCB6B)),
+    RING(4, "Minimal Ring", 2.0f, Color(0xFFFFFFFF)),
+    ORB(5, "Glow Orb", 1.9f, Color(0xFFFFD60A)),
+    DOTS(6, "Glow Dots", 2.4f, Color(0xFF1FA2FF)),
+    LENS(7, "Glass Lens", 2.5f, Color(0xFF8B3DFF));
+
+    companion object {
+        fun byId(id: Int): ToggleStyle = entries.firstOrNull { it.id == id } ?: CLASSIC
+    }
+}
+
+enum class ToggleColorMode(val id: Int) {
+    FOLLOW_PALETTE(0),
+    ORIGINAL(1),
+    CUSTOM(2);
+
+    companion object {
+        fun byId(id: Int): ToggleColorMode = entries.firstOrNull { it.id == id } ?: FOLLOW_PALETTE
+    }
+}
+
+data class DarkNightToggleConfig(
+    val style: ToggleStyle = ToggleStyle.CLASSIC,
+    val colorMode: ToggleColorMode = ToggleColorMode.FOLLOW_PALETTE,
+    val customColor: Color = Color(0xFF2563FF),
+    val size: Int = 1, // 0 = Small, 1 = Medium, 2 = Large
+)
+
+val LocalDarkNightToggle = compositionLocalOf { DarkNightToggleConfig() }
+
+/**
+ * PART 2: Flat Palette mode tokens when Frosted Glass / Aura is OFF.
+ * Palette tint flows through every surface without blur, blobs, or neutral gray fallback.
+ */
+data class DarkNightFlatTokens(
+    val base: Color,
+    val surface: Color,
+    val surfaceHi: Color,
+    val outline: Color,
+)
+
+fun flatTokens(a: Color, dark: Boolean, amoled: Boolean): DarkNightFlatTokens =
+    if (dark) {
+        DarkNightFlatTokens(
+            base = if (amoled) Color.Black else lerp(a, Color.Black, 0.90f),
+            surface = lerp(a, Color.Black, 0.82f),
+            surfaceHi = lerp(a, Color.Black, 0.74f),
+            outline = a.copy(alpha = 0.20f),
+        )
+    } else {
+        DarkNightFlatTokens(
+            base = lerp(a, Color.White, 0.94f),
+            surface = lerp(a, Color.White, 0.88f),
+            surfaceHi = lerp(a, Color.White, 0.82f),
+            outline = a.copy(alpha = 0.20f),
+        )
+    }
+
 data class DarkNightGlassTheme(
     val isDark: Boolean,
+    val flat: Boolean,
     val base: Color,
+    val surface: Color,
+    val surfaceHi: Color,
+    val outline: Color,
     val accent: Color,
     val accentDark: Color,
     val lite: Color,
@@ -289,13 +359,42 @@ fun buildDarkNightGlassTheme(
     palette: DarkNightPalette,
     isDark: Boolean,
     amoled: Boolean,
+    flat: Boolean = false,
 ): DarkNightGlassTheme {
-    val accentDark = lerp(palette.primaryGlow, Color(0xFF0B1020), 0.35f)
+    val a = palette.primaryGlow
+    val accentDark = lerp(a, Color(0xFF0B1020), if (a.luminance() > 0.55f) 0.50f else 0.30f)
+    val tokens = flatTokens(a, isDark, amoled)
+    if (flat) {
+        val content = if (isDark) Color.White.copy(alpha = 0.92f) else Color(0xFF0B1020)
+        return DarkNightGlassTheme(
+            isDark = isDark,
+            flat = true,
+            base = tokens.base,
+            surface = tokens.surface,
+            surfaceHi = tokens.surfaceHi,
+            outline = tokens.outline,
+            accent = a,
+            accentDark = accentDark,
+            lite = lerp(a, Color.White, 0.38f),
+            fillA = tokens.surface,
+            fillB = tokens.surface,
+            borderLite = tokens.outline,
+            shadow = Color.Black.copy(alpha = if (isDark) 0.22f else 0.08f),
+            highlight = Color.Transparent,
+            content = content,
+            contentSecondary = content.copy(alpha = 0.60f),
+            systemBarIconsLight = !isDark,
+        )
+    }
     return if (isDark) {
         DarkNightGlassTheme(
             isDark = true,
+            flat = false,
             base = if (amoled) Color.Black else palette.deepBase,
-            accent = palette.primaryGlow,
+            surface = tokens.surface,
+            surfaceHi = tokens.surfaceHi,
+            outline = tokens.outline,
+            accent = a,
             accentDark = accentDark,
             lite = palette.secondaryGlow,
             fillA = Color.White.copy(alpha = 0.13f),
@@ -310,8 +409,12 @@ fun buildDarkNightGlassTheme(
     } else {
         DarkNightGlassTheme(
             isDark = false,
+            flat = false,
             base = Color(0xFFF3F5FB),
-            accent = palette.primaryGlow,
+            surface = tokens.surface,
+            surfaceHi = tokens.surfaceHi,
+            outline = tokens.outline,
+            accent = a,
             accentDark = accentDark,
             lite = palette.secondaryGlow,
             fillA = Color.White.copy(alpha = 0.72f),
@@ -331,8 +434,24 @@ fun rememberDarkNightGlassTheme(
     palette: DarkNightPalette,
     isDark: Boolean,
     amoled: Boolean,
-): DarkNightGlassTheme = remember(palette.id, isDark, amoled) {
-    buildDarkNightGlassTheme(palette, isDark, amoled)
+    flat: Boolean = false,
+): DarkNightGlassTheme = remember(palette.id, isDark, amoled, flat) {
+    buildDarkNightGlassTheme(palette, isDark, amoled, flat)
+}
+
+/**
+ * C1: Propagates LocalContentColor and LocalTextStyle so child Text/Icon inside any glass or flat card
+ * automatically receives high-contrast glass.content.
+ */
+@Composable
+fun ProvideDarkNightContent(content: @Composable () -> Unit) {
+    val g = LocalDarkNightGlass.current
+    CompositionLocalProvider(
+        LocalContentColor provides g.content,
+        LocalTextStyle provides LocalTextStyle.current.copy(color = g.content),
+    ) {
+        content()
+    }
 }
 
 val LocalDarkNightGlass = staticCompositionLocalOf {
@@ -371,8 +490,20 @@ data class DarkNightThemeState(
     val borderHighlightEnabled: Boolean = true,
     val blurRadiusDp: Float = 18f,
     val glassStrength: Float = 1.0f,
+    // PART 4: 8-style Toggle preferences
+    val toggleStyle: ToggleStyle = ToggleStyle.CLASSIC,
+    val toggleColorMode: ToggleColorMode = ToggleColorMode.FOLLOW_PALETTE,
+    val toggleCustomColorArgb: Int = 0xFF2563FF.toInt(),
+    val toggleSize: Int = 1,
 ) {
     val glassOn: Boolean get() = auraEnabled && blurQuality != DarkNightBlurQuality.OFF
+    val toggleConfig: DarkNightToggleConfig
+        get() = DarkNightToggleConfig(
+            style = toggleStyle,
+            colorMode = toggleColorMode,
+            customColor = Color(toggleCustomColorArgb),
+            size = toggleSize,
+        )
 }
 
 object DarkNightThemeStore {
@@ -398,6 +529,10 @@ object DarkNightThemeStore {
     private const val KEY_BORDER_HIGHLIGHT = "border_highlight_enabled"
     private const val KEY_BLUR_RADIUS_DP = "blur_radius_dp"
     private const val KEY_GLASS_STRENGTH = "glass_strength"
+    private const val KEY_TOGGLE_STYLE = "toggle_style"
+    private const val KEY_TOGGLE_COLOR_MODE = "toggle_color_mode"
+    private const val KEY_TOGGLE_CUSTOM_COLOR = "toggle_custom_color"
+    private const val KEY_TOGGLE_SIZE = "toggle_size"
 
     /** Process-level flag so SplashScreen only plays on cold start, never on theme/UI-style change (T3). */
     @Volatile
@@ -436,6 +571,10 @@ object DarkNightThemeStore {
                 borderHighlightEnabled = prefs.getBoolean(KEY_BORDER_HIGHLIGHT, true),
                 blurRadiusDp = prefs.getFloat(KEY_BLUR_RADIUS_DP, 18f).coerceIn(0f, 40f),
                 glassStrength = prefs.getFloat(KEY_GLASS_STRENGTH, 1.0f).coerceIn(0.3f, 2.0f),
+                toggleStyle = ToggleStyle.byId(prefs.getInt(KEY_TOGGLE_STYLE, ToggleStyle.CLASSIC.id)),
+                toggleColorMode = ToggleColorMode.byId(prefs.getInt(KEY_TOGGLE_COLOR_MODE, ToggleColorMode.FOLLOW_PALETTE.id)),
+                toggleCustomColorArgb = prefs.getInt(KEY_TOGGLE_CUSTOM_COLOR, 0xFF2563FF.toInt()),
+                toggleSize = prefs.getInt(KEY_TOGGLE_SIZE, 1).coerceIn(0, 2),
             )
             initialized = true
         }
@@ -600,6 +739,31 @@ object DarkNightThemeStore {
         val clamped = strength.coerceIn(0.3f, 2.0f)
         prefs(context).edit().putFloat(KEY_GLASS_STRENGTH, clamped).apply()
         _state.value = _state.value.copy(glassStrength = clamped)
+    }
+
+    fun setToggleStyle(context: Context, style: ToggleStyle) {
+        init(context)
+        prefs(context).edit().putInt(KEY_TOGGLE_STYLE, style.id).apply()
+        _state.value = _state.value.copy(toggleStyle = style)
+    }
+
+    fun setToggleColorMode(context: Context, mode: ToggleColorMode) {
+        init(context)
+        prefs(context).edit().putInt(KEY_TOGGLE_COLOR_MODE, mode.id).apply()
+        _state.value = _state.value.copy(toggleColorMode = mode)
+    }
+
+    fun setToggleCustomColor(context: Context, argb: Int) {
+        init(context)
+        prefs(context).edit().putInt(KEY_TOGGLE_CUSTOM_COLOR, argb).apply()
+        _state.value = _state.value.copy(toggleCustomColorArgb = argb)
+    }
+
+    fun setToggleSize(context: Context, size: Int) {
+        init(context)
+        val clamped = size.coerceIn(0, 2)
+        prefs(context).edit().putInt(KEY_TOGGLE_SIZE, clamped).apply()
+        _state.value = _state.value.copy(toggleSize = clamped)
     }
 
     fun activeKeyColorArgb(): Int = _state.value.palette.primaryGlow.toArgb()
@@ -809,17 +973,12 @@ fun Modifier.darkNightGlassCardSurface(
     val midBorderAlpha = if (glass.isDark) 0.07f else 0.06f
     val endBorderAlpha = if (glass.isDark) 0.16f else 0.14f
 
-    // B6: When Global Aura is OFF, render clean flat solid (no blur, no glass sheen)
-    if (!themeState.auraEnabled && !isMonospaceDark) {
-        val solidBg = if (glass.isDark) {
-            if (themeState.amoledBlack) Color.Black else Color(0xFF0E1424)
-        } else {
-            Color.White
-        }
+    // PART 2: When Frosted Glass / Aura is OFF, render palette-tinted flat surface (zero neutral gray / blur / sheen)
+    if (!themeState.glassOn && !isMonospaceDark) {
         return this
             .clip(shape)
-            .background(solidBg)
-            .border(1.dp, glass.accent.copy(alpha = 0.25f), shape)
+            .background(glass.surface)
+            .border(1.dp, glass.outline, shape)
     }
 
     val blurMod = if (hasRealBlur && backdrop != null) {
@@ -960,13 +1119,15 @@ fun DarkNightGlassCard(
                 }
             },
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-            content = content,
-        )
+        ProvideDarkNightContent {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                content = content,
+            )
+        }
     }
 }
 
@@ -1520,6 +1681,8 @@ fun DarkNightGradientPaletteSection(
                 Text("Replay Startup Intro Screen", color = glass.content)
             }
         }
+
+        com.kazesu.manager.ui.component.DarkNightToggleStyleSection()
     }
 }
 

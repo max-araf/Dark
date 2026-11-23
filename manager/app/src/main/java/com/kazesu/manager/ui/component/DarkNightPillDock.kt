@@ -172,6 +172,9 @@ fun DarkNightPillDock(
                     .clip(dockShape)
                     .drawBehind {
                         when {
+                            !glassOn -> {
+                                drawRect(glass.surfaceHi)
+                            }
                             effectiveSolid && isLight -> {
                                 drawRect(Color.White)
                             }

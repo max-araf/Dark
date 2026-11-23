@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.view.WindowInsetsControllerCompat
 import com.kazesu.manager.ui.LocalUiMode
@@ -103,7 +104,26 @@ fun MaterialKernelSUTheme(
     val isDarkNightAura = LocalBackgroundImagePath.current == "darknight://aura"
     val surfaceAwareColorScheme = remember(animatedColorScheme, hasCustomBackground, cardAlpha, isDarkNightAura, glass) {
         if (!hasCustomBackground) {
-            animatedColorScheme
+            val effAccent = if (!glass.isDark && glass.accent.luminance() > 0.55f) glass.accentDark else glass.accent
+            animatedColorScheme.copy(
+                primary = effAccent,
+                onPrimary = contrastOn(effAccent),
+                background = glass.base,
+                surface = glass.surface,
+                surfaceContainer = glass.surface,
+                surfaceContainerLow = glass.base,
+                surfaceContainerHigh = glass.surfaceHi,
+                surfaceContainerHighest = glass.surfaceHi,
+                surfaceBright = glass.surface,
+                onBackground = glass.content,
+                onSurface = glass.content,
+                onSurfaceVariant = glass.contentSecondary,
+                onPrimaryContainer = glass.content,
+                onSecondaryContainer = glass.content,
+                onTertiaryContainer = glass.content,
+                outline = glass.outline,
+                outlineVariant = glass.content.copy(alpha = 0.14f),
+            )
         } else {
             val base = animatedColorScheme.copy(
                 surfaceBright = animatedColorScheme.surfaceBright.copy(alpha = cardAlpha),
@@ -111,10 +131,18 @@ fun MaterialKernelSUTheme(
                 surfaceContainerHighest = animatedColorScheme.surfaceContainerHighest.copy(alpha = cardAlpha),
             )
             if (isDarkNightAura) {
+                val effAccent = if (!glass.isDark && glass.accent.luminance() > 0.55f) glass.accentDark else glass.accent
                 base.copy(
+                    primary = effAccent,
+                    onPrimary = contrastOn(effAccent),
                     onSurface = glass.content,
                     onBackground = glass.content,
                     onSurfaceVariant = glass.contentSecondary,
+                    onPrimaryContainer = glass.content,
+                    onSecondaryContainer = glass.content,
+                    onTertiaryContainer = glass.content,
+                    outline = glass.content.copy(alpha = 0.28f),
+                    outlineVariant = glass.content.copy(alpha = 0.14f),
                 )
             } else {
                 base

@@ -123,21 +123,11 @@ fun HomePagerMiuix(
     AppScaffold(
         containerColor = if (hasCustomBackground) Color.Transparent else colorScheme.surface,
         topBar = {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(Color(0xE007090F), Color(0xB807090F), Color.Transparent)
-                        )
-                    )
-            ) {
             TopBar(
                 scrollBehavior = scrollBehavior,
                 backdrop = backdrop,
                 onOpenThemeStore = actions.onOpenThemeStore,
             )
-            }
         },
         popupHost = { },
         contentWindowInsets = WindowInsets.systemBars.add(WindowInsets.displayCutout).only(WindowInsetsSides.Horizontal)

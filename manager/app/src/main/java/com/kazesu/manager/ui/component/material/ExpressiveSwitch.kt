@@ -1,19 +1,14 @@
 package com.kazesu.manager.ui.component.material
 
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchColors
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import com.kazesu.manager.ui.component.DarkNightToggle
 
 @Composable
 fun ExpressiveSwitch(
@@ -26,22 +21,11 @@ fun ExpressiveSwitch(
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
     showThumbIcon: Boolean = true,
 ) {
-    Switch(
+    DarkNightToggle(
         checked = checked,
         onCheckedChange = onCheckedChange,
         modifier = modifier,
-        thumbContent = thumbContent ?: if (showThumbIcon && (checked || enabled)) {
-            {
-                Icon(
-                    imageVector = if (checked) Icons.Filled.Check else Icons.Filled.Close,
-                    contentDescription = null,
-                    modifier = Modifier.size(SwitchDefaults.IconSize),
-                )
-            }
-        } else null,
         enabled = enabled,
-        colors = colors,
-        interactionSource = interactionSource
     )
 }
 

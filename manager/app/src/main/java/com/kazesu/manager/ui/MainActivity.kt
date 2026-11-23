@@ -128,6 +128,7 @@ import com.kazesu.manager.ui.component.DarkNightPillDock
 import com.kazesu.manager.ui.component.DarkNightSideInfoBarOverlay
 import com.kazesu.manager.ui.screen.darknight.DarkNightSideInfoBarSettingsScreen
 import com.kazesu.manager.ui.theme.LocalDarkNightGlass
+import com.kazesu.manager.ui.theme.LocalDarkNightToggle
 import com.kazesu.manager.ui.theme.LocalSideInfoBarPadding
 import com.kazesu.manager.ui.theme.rememberDarkNightGlassTheme
 import com.kazesu.manager.ui.theme.DarkNightNavStyle
@@ -250,6 +251,7 @@ class MainActivity : ComponentActivity() {
                         android.graphics.Color.TRANSPARENT
                     ) { darkMode },
                 )
+                window.isStatusBarContrastEnforced = false
                 window.isNavigationBarContrastEnforced = false
                 onDispose { }
             }
@@ -276,6 +278,7 @@ class MainActivity : ComponentActivity() {
                 palette = darkNightTheme.palette,
                 isDark = darkMode,
                 amoled = darkNightTheme.amoledBlack,
+                flat = !darkNightTheme.glassOn,
             )
             val sideInfoBarPadding = if (darkNightTheme.infoBarEnabled && darkNightTheme.infoBarPinned) 62.dp else 0.dp
             var sidebarExpanded by remember { mutableStateOf(false) }
@@ -298,6 +301,7 @@ class MainActivity : ComponentActivity() {
             }
             CompositionLocalProvider(
                 LocalDarkNightGlass provides darkNightGlass,
+                LocalDarkNightToggle provides darkNightTheme.toggleConfig,
                 LocalSideInfoBarPadding provides sideInfoBarPadding,
                 LocalUriHandler provides object : UriHandler {
                     override fun openUri(uri: String) {
@@ -593,14 +597,21 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
-                        when (uiMode) {
-                            UiMode.Material -> androidx.compose.material3.Scaffold(
-                                containerColor = if (hasCustomBackground || showDarkNightAura) Color.Transparent else darkNightGlass.base
-                            ) { navDisplay() }
+                        // C4: Smooth 160ms Crossfade on Material <-> Miuix switch over opaque glass.base (zero white flash)
+                        Crossfade(
+                            targetState = uiMode,
+                            animationSpec = tween(durationMillis = 160),
+                            label = "ui_mode_crossfade",
+                        ) { activeUiMode ->
+                            when (activeUiMode) {
+                                UiMode.Material -> androidx.compose.material3.Scaffold(
+                                    containerColor = if (hasCustomBackground || showDarkNightAura) Color.Transparent else darkNightGlass.base
+                                ) { navDisplay() }
 
-                            UiMode.Miuix -> Scaffold(
-                                containerColor = if (hasCustomBackground || showDarkNightAura) Color.Transparent else darkNightGlass.base
-                            ) { navDisplay() }
+                                UiMode.Miuix -> Scaffold(
+                                    containerColor = if (hasCustomBackground || showDarkNightAura) Color.Transparent else darkNightGlass.base
+                                ) { navDisplay() }
+                            }
                         }
 
                         // PART 3: Right-edge Side Info Bar (hidden during splash, onboarding, or open drawer)

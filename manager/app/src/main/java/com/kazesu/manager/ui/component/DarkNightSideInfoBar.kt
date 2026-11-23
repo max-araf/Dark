@@ -419,6 +419,6 @@ private fun QuickToggleRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(label, fontSize = 14.sp)
-        Switch(checked = checked, onCheckedChange = onCheckedChange)
+        DarkNightToggle(checked = checked, onCheckedChange = onCheckedChange)
     }
 }

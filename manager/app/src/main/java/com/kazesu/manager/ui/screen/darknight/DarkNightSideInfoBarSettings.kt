@@ -232,6 +232,6 @@ private fun SettingSwitchRow(
             Text(title, color = glass.content, fontWeight = FontWeight.Medium, fontSize = 14.sp)
             Text(subtitle, color = glass.contentSecondary, fontSize = 11.sp)
         }
-        Switch(checked = checked, onCheckedChange = onCheckedChange)
+        com.kazesu.manager.ui.component.DarkNightToggle(checked = checked, onCheckedChange = onCheckedChange)
     }
 }

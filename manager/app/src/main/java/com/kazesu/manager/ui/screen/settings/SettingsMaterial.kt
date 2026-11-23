@@ -261,7 +261,7 @@ fun SettingPagerMaterial(
                                 }
                             },
                             trailingContent = {
-                                androidx.compose.material3.Switch(
+                                com.kazesu.manager.ui.component.DarkNightToggle(
                                     checked = dnState.infoBarEnabled,
                                     onCheckedChange = { com.kazesu.manager.ui.theme.DarkNightThemeStore.setInfoBarEnabled(dnContext, it) },
                                 )
