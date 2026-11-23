@@ -88,7 +88,7 @@ import top.yukonga.miuix.kmp.basic.ListPopupColumn
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
-import top.yukonga.miuix.kmp.basic.Switch
+import com.kazesu.manager.ui.component.miuix.Switch
 import androidx.compose.foundation.layout.offset
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring

@@ -10,7 +10,7 @@ import com.kazesu.manager.ui.UiMode
 import com.kazesu.manager.ui.component.material.SegmentedColumn
 import com.kazesu.manager.ui.component.material.SegmentedSwitchItem
 import com.kazesu.manager.ui.component.miuix.AppCard
-import top.yukonga.miuix.kmp.preference.SwitchPreference
+import com.kazesu.manager.ui.component.miuix.SwitchPreference
 
 @Composable
 fun FeatureTogglesContent(

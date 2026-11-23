@@ -346,9 +346,8 @@ private fun StatusCard(
         }
     }
     val hasCustomLayout = state.homeLayout == HomeLayout.IMMERSIVE || state.homeCardStickers.isNotEmpty()
-    val isDarkNightAura = LocalBackgroundImagePath.current == "darknight://aura"
     when {
-        isDarkNightAura && !hasCustomLayout -> {
+        !hasCustomLayout -> {
             val kind = when {
                 state.ksuVersion != null -> DarkNightStatusKind.WORKING
                 state.isRootAvailable || state.isPreviewMode -> DarkNightStatusKind.LIMITED

@@ -141,12 +141,14 @@ fun Modifier.darkNightGlass(
         .clip(shape)
         .drawBehind {
             if (glass.isDark) {
+                val darkTop = lerp(accent, Color.Black, 0.72f)
+                val darkMid = lerp(accent, Color.Black, 0.64f)
                 drawRect(
                     brush = Brush.linearGradient(
                         colorStops = arrayOf(
-                            0.00f to Color(0xFF040710).copy(alpha = topDarkAlpha),
-                            0.26f to Color(0xFF040710).copy(alpha = midDarkAlpha),
-                            0.60f to accent.copy(alpha = accentMidAlpha),
+                            0.00f to darkTop.copy(alpha = topDarkAlpha),
+                            0.45f to darkMid.copy(alpha = midDarkAlpha),
+                            0.78f to accent.copy(alpha = accentMidAlpha),
                             1.00f to accent.copy(alpha = accentEndAlpha),
                         ),
                         start = Offset(0f, 0f),
@@ -154,12 +156,13 @@ fun Modifier.darkNightGlass(
                     )
                 )
             } else {
+                // D6: Pure Light pastel palette glass (zero black/dark stops)
                 drawRect(
                     brush = Brush.linearGradient(
                         colorStops = arrayOf(
-                            0.00f to Color.White.copy(alpha = 0.80f),
-                            0.60f to Color.White.copy(alpha = 0.46f),
-                            1.00f to accent.copy(alpha = 0.20f),
+                            0.00f to Color.White.copy(alpha = 0.86f),
+                            0.55f to lerp(accent, Color.White, 0.86f).copy(alpha = 0.90f),
+                            1.00f to lerp(accent, Color.White, 0.76f).copy(alpha = 0.92f),
                         ),
                         start = Offset(0f, 0f),
                         end = Offset(size.width * 0.35f, size.height),
@@ -394,18 +397,15 @@ fun DarkNightGlassSidebarOverlay(
                         modifier = Modifier
                             .size(38.dp)
                             .clip(CircleShape)
-                            .background(Color(0x99040710))
+                            .background(if (LocalDarkNightGlass.current.isDark) lerp(palette.primaryGlow, Color.Black, 0.70f).copy(alpha = 0.80f) else palette.primaryGlow.copy(alpha = 0.14f))
                             .border(1.dp, palette.secondaryGlow.copy(alpha = 0.55f), CircleShape)
                             .clickable(enabled = !expanded) { onOpenAbout() },
                         contentAlignment = Alignment.Center,
                     ) {
-                        Text(
-                            text = "#",
-                            color = palette.secondaryGlow,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 18.sp,
-                            maxLines = 1,
-                            softWrap = false,
+                        Image(
+                            painter = painterResource(R.drawable.ic_dn_logo),
+                            contentDescription = "About",
+                            modifier = Modifier.size(24.dp).clip(RoundedCornerShape(7.dp)),
                         )
                     }
                 }
@@ -543,7 +543,7 @@ fun DarkNightGlassSidebarOverlay(
                                 onOpenAbout()
                             },
                         shape = RoundedCornerShape(18.dp),
-                        color = Color(0x66040710),
+                        color = if (LocalDarkNightGlass.current.isDark) lerp(palette.primaryGlow, Color.Black, 0.72f).copy(alpha = 0.75f) else palette.primaryGlow.copy(alpha = 0.14f),
                         border = BorderStroke(1.dp, borderTint.copy(alpha = 0.28f)),
                     ) {
                         Row(
@@ -559,7 +559,7 @@ fun DarkNightGlassSidebarOverlay(
                                     .border(1.dp, palette.secondaryGlow.copy(alpha = 0.55f), CircleShape),
                                 contentAlignment = Alignment.Center,
                             ) {
-                                Text("#", color = contrastOn(palette.primaryGlow), fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                                Image(painter = painterResource(R.drawable.ic_dn_logo), contentDescription = "DarkNightSu", modifier = Modifier.size(26.dp).clip(RoundedCornerShape(7.dp)))
                             }
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(

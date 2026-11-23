@@ -300,9 +300,44 @@ class HorizonKernelWorker(
     }
 
     private fun getBinary() {
-        requireCommand(false, "unzip ${shellQuote(filePath)} '*/update-binary' -d ${shellQuote(sessionDir.absolutePath)}")
-        if (!File(binaryPath).exists()) {
-            throw IOException("Failed to extract update-binary")
+        val outFile = File(binaryPath)
+        outFile.parentFile?.mkdirs()
+        var extracted = false
+        var hasInnerZip = false
+        try {
+            java.util.zip.ZipFile(filePath).use { zf ->
+                val entries = zf.entries()
+                while (entries.hasMoreElements()) {
+                    val entry = entries.nextElement()
+                    val name = entry.name.replace("\\", "/")
+                    if (!entry.isDirectory && name.endsWith("META-INF/com/google/android/update-binary")) {
+                        zf.getInputStream(entry).use { input ->
+                            FileOutputStream(outFile).use { output -> input.copyTo(output) }
+                        }
+                        outFile.setExecutable(true, false)
+                        extracted = true
+                        break
+                    }
+                    if (!entry.isDirectory && name.endsWith(".zip", ignoreCase = true)) {
+                        hasInnerZip = true
+                    }
+                }
+            }
+        } catch (_: Exception) {
+            // Fallback to shell unzip if ZipFile fails
+        }
+        if (!extracted) {
+            runCatching {
+                requireCommand(false, "unzip -o ${shellQuote(filePath)} '*/update-binary' -d ${shellQuote(sessionDir.absolutePath)}")
+            }
+        }
+        if (!outFile.exists() || outFile.length() == 0L) {
+            val hint = if (hasInnerZip) {
+                "Not an AnyKernel3 zip (update-binary missing). If this is a GitHub Actions artifact zip, extract the inner .zip first."
+            } else {
+                "Not a valid AnyKernel3 zip (META-INF/com/google/android/update-binary not found)."
+            }
+            throw IOException(hint)
         }
     }
 

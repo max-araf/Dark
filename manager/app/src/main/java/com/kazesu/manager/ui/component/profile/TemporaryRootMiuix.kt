@@ -35,7 +35,7 @@ import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.CheckboxPreference
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
-import top.yukonga.miuix.kmp.preference.SwitchPreference
+import com.kazesu.manager.ui.component.miuix.SwitchPreference
 import com.kazesu.manager.ui.component.miuix.AppCard
 import com.kazesu.manager.ui.theme.backgroundAwareCardColors
 import com.kazesu.manager.ui.util.CustomTextKey

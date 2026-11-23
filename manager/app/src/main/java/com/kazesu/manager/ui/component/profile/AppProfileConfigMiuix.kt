@@ -12,7 +12,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.kazesu.manager.Natives
 import com.kazesu.manager.R
 import com.kazesu.manager.ui.component.miuix.EditText
-import top.yukonga.miuix.kmp.preference.SwitchPreference
+import com.kazesu.manager.ui.component.miuix.SwitchPreference
 
 @Composable
 fun AppProfileConfigMiuix(

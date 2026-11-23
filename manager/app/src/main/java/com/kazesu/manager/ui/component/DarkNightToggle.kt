@@ -14,13 +14,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -82,7 +79,44 @@ private val CustomToggleSwatches = listOf(
 )
 
 /**
- * PART 4: Unified 8-style Toggle Switch ported directly from darknight_toggles_reference.html.
+ * D1 (v7): Theme-matched toggle tokens — track, thumb, border, and label ALWAYS derive from
+ * the active theme palette + Light/Dark mode. Zero neutral black/dark-gray tracks.
+ */
+data class ToggleTokens(
+    val t0: Color,
+    val t1: Color,
+    val tb: Color,
+    val tc: Color,
+    val tcOff: Color,
+    val th0: Color,
+    val th1: Color,
+)
+
+fun toggleTokens(a: Color, dark: Boolean): ToggleTokens =
+    if (dark) {
+        ToggleTokens(
+            t0 = lerp(a, Color.Black, 0.88f),
+            t1 = lerp(a, Color.Black, 0.78f),
+            tb = a.copy(alpha = 0.42f),
+            tc = Color.White.copy(alpha = 0.88f),
+            tcOff = Color.White.copy(alpha = 0.50f),
+            th0 = lerp(a, Color.Black, 0.55f),
+            th1 = lerp(a, Color.Black, 0.72f),
+        )
+    } else {
+        ToggleTokens(
+            t0 = lerp(a, Color.White, 0.74f),
+            t1 = lerp(a, Color.White, 0.88f),
+            tb = a.copy(alpha = 0.50f),
+            tc = lerp(a, Color.Black, 0.50f),
+            tcOff = lerp(a, Color.Black, 0.55f).copy(alpha = 0.72f),
+            th0 = Color.White,
+            th1 = lerp(a, Color.White, 0.80f),
+        )
+    }
+
+/**
+ * PART 4 + D1 (v7): Unified 8-style Toggle Switch with theme-matched tracks (Dark & Light).
  * Zero maskFilter / RenderEffect on Canvas (low-end Galaxy A13 safe); 48dp accessible touch target.
  */
 @Composable
@@ -100,14 +134,17 @@ fun DarkNightToggle(
     val config = overrideConfig ?: LocalDarkNightToggle.current
     val style = config.style
 
-    val targetAccent = when (config.colorMode) {
+    // ON accent honors ColorMode; track/thumb/border/label ALWAYS derive from theme palette + mode (D1)
+    val themeAccent by animateColorAsState(glass.accent, tween(300), label = "tg_theme_accent")
+    val targetOnAccent = when (config.colorMode) {
         ToggleColorMode.FOLLOW_PALETTE -> glass.accent
         ToggleColorMode.ORIGINAL -> if (style == ToggleStyle.RING && !glass.isDark) Color(0xFF0B1020) else style.originalColor
         ToggleColorMode.CUSTOM -> config.customColor
     }
-    val a by animateColorAsState(targetAccent, tween(300), label = "tg_accent")
+    val a by animateColorAsState(targetOnAccent, tween(300), label = "tg_on_accent")
     val l = lerp(a, Color.White, 0.38f)
     val d = lerp(a, Color.Black, 0.45f)
+    val tk = remember(themeAccent, glass.isDark) { toggleTokens(themeAccent, glass.isDark) }
 
     val progress by animateFloatAsState(
         targetValue = if (checked) 1f else 0f,
@@ -158,22 +195,13 @@ fun DarkNightToggle(
 
             when (style) {
                 ToggleStyle.NEON -> {
-                    // Black recessed track + 0.05em white rim
-                    drawRoundRect(
-                        brush = Brush.verticalGradient(listOf(Color(0xFF050506), Color(0xFF17171B))),
-                        cornerRadius = rTrack,
-                    )
-                    drawRoundRect(
-                        color = Color.White.copy(alpha = 0.22f),
-                        cornerRadius = rTrack,
-                        style = Stroke(width = 0.05f * em),
-                    )
-                    // ON/OFF label
+                    drawRoundRect(brush = Brush.verticalGradient(listOf(tk.t0, tk.t1)), cornerRadius = rTrack)
+                    drawRoundRect(color = tk.tb, cornerRadius = rTrack, style = Stroke(width = 0.05f * em))
                     val lbl = if (progress > 0.5f) "ON" else "OFF"
                     val lay = textMeasurer.measure(
                         lbl,
                         TextStyle(
-                            color = Color.White.copy(alpha = if (progress > 0.5f) 0.82f else 0.45f),
+                            color = if (progress > 0.5f) tk.tc else tk.tcOff,
                             fontSize = (0.30f * em).toSp(),
                             fontWeight = FontWeight.ExtraBold,
                         ),
@@ -181,7 +209,6 @@ fun DarkNightToggle(
                     val lx = if (progress > 0.5f) 0.28f * em else w - 0.26f * em - lay.size.width
                     drawText(lay, topLeft = Offset(lx, (h - lay.size.height) / 2f))
 
-                    // Glow + Orb when ON
                     if (progress > 0.05f) {
                         val gc = Offset(0.95f * em, h / 2f)
                         drawCircle(a.copy(alpha = 0.35f * progress), radius = 0.65f * em, center = gc)
@@ -192,61 +219,48 @@ fun DarkNightToggle(
                             alpha = progress,
                         )
                     }
-                    // Frosted Glass Thumb (1.5em x 1.0em)
                     val tw = 1.46f * em
                     val th = 0.96f * em
                     val tx = 0.02f * em + (w - tw - 0.04f * em) * progress
                     val ty = (h - th) / 2f
                     val thBrush = if (progress > 0.5f) {
                         Brush.linearGradient(
-                            listOf(lerp(l, Color.White, 0.45f).copy(alpha = 0.85f), a.copy(alpha = 0.55f), l.copy(alpha = 0.65f)),
+                            listOf(lerp(l, Color.White, 0.45f).copy(alpha = 0.85f), a.copy(alpha = 0.60f), l.copy(alpha = 0.68f)),
                             start = Offset(tx, ty),
                             end = Offset(tx + tw, ty + th),
                         )
                     } else {
                         Brush.linearGradient(
-                            listOf(Color.White.copy(alpha = 0.58f), Color.White.copy(alpha = 0.20f), Color.White.copy(alpha = 0.36f)),
+                            listOf(tk.th0, tk.th1),
                             start = Offset(tx, ty),
                             end = Offset(tx + tw, ty + th),
                         )
                     }
-                    drawRoundRect(
-                        brush = thBrush,
-                        topLeft = Offset(tx, ty),
-                        size = Size(tw, th),
-                        cornerRadius = CornerRadius(th / 2f, th / 2f),
-                    )
-                    drawRoundRect(
-                        color = Color.White.copy(alpha = 0.58f),
-                        topLeft = Offset(tx, ty),
-                        size = Size(tw, th),
-                        cornerRadius = CornerRadius(th / 2f, th / 2f),
-                        style = Stroke(width = 0.03f * em),
-                    )
-                    // Dot grid inside left of thumb
+                    drawRoundRect(brush = thBrush, topLeft = Offset(tx, ty), size = Size(tw, th), cornerRadius = CornerRadius(th / 2f, th / 2f))
+                    drawRoundRect(color = if (progress > 0.5f) Color.White.copy(alpha = 0.60f) else tk.tb, topLeft = Offset(tx, ty), size = Size(tw, th), cornerRadius = CornerRadius(th / 2f, th / 2f), style = Stroke(width = 0.03f * em))
+                    val dotColor = if (progress > 0.5f || glass.isDark) Color.White.copy(alpha = 0.80f) else tk.tc.copy(alpha = 0.65f)
                     for (gx in 0 until 4) {
                         for (gy in 0 until 3) {
                             drawCircle(
-                                color = Color.White.copy(alpha = 0.80f),
+                                color = dotColor,
                                 radius = 0.028f * em,
                                 center = Offset(tx + (0.28f + gx * 0.14f) * em, ty + (0.30f + gy * 0.17f) * em),
                             )
                         }
                     }
-                    // Lens circle inside right of thumb
                     val lc = Offset(tx + tw - 0.48f * em, ty + th / 2f)
                     drawCircle(Color.White.copy(alpha = 0.28f), radius = 0.36f * em, center = lc)
-                    drawCircle(Color.White.copy(alpha = 0.55f), radius = 0.36f * em, center = lc, style = Stroke(0.025f * em))
+                    drawCircle(if (progress > 0.5f) Color.White.copy(alpha = 0.55f) else tk.tb, radius = 0.36f * em, center = lc, style = Stroke(0.025f * em))
                 }
 
                 ToggleStyle.TACTILE -> {
-                    val trkTop = lerp(Color(0xFF3B3B3D), a, progress)
-                    val trkBot = lerp(Color(0xFF5A5A5C), l, progress)
+                    val trkTop = lerp(tk.t1, a, progress)
+                    val trkBot = lerp(tk.t0, l, progress)
                     drawRoundRect(brush = Brush.verticalGradient(listOf(trkTop, trkBot)), cornerRadius = rTrack)
-                    drawRoundRect(color = Color(0xFFD9D9DC), cornerRadius = rTrack, style = Stroke(0.05f * em))
+                    drawRoundRect(color = tk.tb, cornerRadius = rTrack, style = Stroke(0.05f * em))
                     if (progress < 0.5f) {
                         drawCircle(
-                            color = Color.White.copy(alpha = 0.30f),
+                            color = tk.tcOff,
                             radius = 0.13f * em,
                             center = Offset(w - 0.33f * em, h / 2f),
                             style = Stroke(0.035f * em),
@@ -273,40 +287,45 @@ fun DarkNightToggle(
                 }
 
                 ToggleStyle.HARDWARE -> {
-                    drawRoundRect(color = Color(0xFF1A1C20), cornerRadius = rTrack)
-                    drawRoundRect(color = Color(0xFF30333A), cornerRadius = rTrack, style = Stroke(0.045f * em))
+                    drawRoundRect(brush = Brush.verticalGradient(listOf(tk.t0, tk.t1)), cornerRadius = rTrack)
+                    drawRoundRect(color = tk.tb, cornerRadius = rTrack, style = Stroke(0.045f * em))
                     val tw = 1.62f * em
                     val th = 0.86f * em
                     val tx = 0.07f * em + (w - tw - 0.14f * em) * progress
                     val ty = (h - th) / 2f
                     drawRoundRect(
-                        brush = Brush.verticalGradient(listOf(Color(0xFF363940), Color(0xFF25282D))),
+                        brush = Brush.verticalGradient(listOf(tk.th0, tk.th1)),
                         topLeft = Offset(tx, ty),
                         size = Size(tw, th),
                         cornerRadius = CornerRadius(th / 2f, th / 2f),
                     )
-                    // 3 grip grooves
+                    drawRoundRect(
+                        color = tk.tb.copy(alpha = 0.55f),
+                        topLeft = Offset(tx, ty),
+                        size = Size(tw, th),
+                        cornerRadius = CornerRadius(th / 2f, th / 2f),
+                        style = Stroke(0.025f * em),
+                    )
                     for (g in 0 until 3) {
                         drawRoundRect(
-                            color = Color(0xFF14161A),
+                            color = tk.t0,
                             topLeft = Offset(tx + (0.28f + g * 0.16f) * em, ty + 0.22f * em),
                             size = Size(0.075f * em, 0.42f * em),
                             cornerRadius = CornerRadius(0.03f * em, 0.03f * em),
                         )
                     }
-                    // LED slot (glows with 2-pass alpha halo when ON)
                     val ledX = tx + tw - 0.36f * em
                     val ledY = ty + 0.21f * em
                     if (progress > 0.1f) {
                         drawRoundRect(
-                            color = a.copy(alpha = 0.28f * progress),
+                            color = a.copy(alpha = 0.30f * progress),
                             topLeft = Offset(ledX - 0.10f * em, ledY - 0.10f * em),
                             size = Size(0.31f * em, 0.64f * em),
                             cornerRadius = CornerRadius(0.15f * em, 0.15f * em),
                         )
                     }
                     drawRoundRect(
-                        color = lerp(Color(0xFFB8BAC0), l, progress),
+                        color = lerp(tk.tcOff, l, progress),
                         topLeft = Offset(ledX, ledY),
                         size = Size(0.11f * em, 0.44f * em),
                         cornerRadius = CornerRadius(0.055f * em, 0.055f * em),
@@ -314,16 +333,17 @@ fun DarkNightToggle(
                 }
 
                 ToggleStyle.CLASSIC -> {
-                    val offTop = if (glass.isDark) Color(0xFF2D3037) else Color(0xFFCFD1D6)
-                    val offBot = if (glass.isDark) Color(0xFF3B3F48) else Color(0xFFE3E5E9)
-                    val trkTop = lerp(offTop, a, progress)
-                    val trkBot = lerp(offBot, l, progress)
+                    val trkTop = lerp(tk.t0, a, progress)
+                    val trkBot = lerp(tk.t1, l, progress)
                     drawRoundRect(brush = Brush.verticalGradient(listOf(trkTop, trkBot)), cornerRadius = rTrack)
+                    if (progress < 0.5f) {
+                        drawRoundRect(color = tk.tb.copy(alpha = 0.6f), cornerRadius = rTrack, style = Stroke(0.025f * em))
+                    }
                     val lbl = if (progress > 0.5f) "ON" else "OFF"
                     val lay = textMeasurer.measure(
                         lbl,
                         TextStyle(
-                            color = if (progress > 0.5f) contrastOn(a).copy(alpha = 0.85f) else Color.White.copy(alpha = 0.92f),
+                            color = if (progress > 0.5f) contrastOn(a).copy(alpha = 0.88f) else tk.tcOff,
                             fontSize = (0.34f * em).toSp(),
                             fontWeight = FontWeight.Bold,
                         ),
@@ -344,13 +364,12 @@ fun DarkNightToggle(
                 }
 
                 ToggleStyle.RING -> {
-                    val offStroke = if (glass.isDark) Color.White.copy(alpha = 0.24f) else Color(0xFF0B1020).copy(alpha = 0.20f)
-                    val ringColor = lerp(offStroke, a, progress)
+                    val ringColor = lerp(tk.tb, a, progress)
                     val sw = 0.22f * em
                     val pad = sw / 2f
                     if (progress > 0.2f && glass.isDark) {
                         drawRoundRect(
-                            color = a.copy(alpha = 0.24f * progress),
+                            color = a.copy(alpha = 0.26f * progress),
                             topLeft = Offset(pad, pad),
                             size = Size(w - sw, h - sw),
                             cornerRadius = CornerRadius((h - sw) / 2f, (h - sw) / 2f),
@@ -368,7 +387,7 @@ fun DarkNightToggle(
                     val cx = 0.46f * em + (w - 0.92f * em) * progress
                     drawCircle(
                         brush = Brush.radialGradient(
-                            listOf(Color(0xFFD8D8DC), Color(0xFF8A8B90), Color(0xFF5C5D62)),
+                            listOf(tk.th0, tk.th1),
                             center = Offset(cx - 0.04f * em, h * 0.42f),
                             radius = rBall * 1.6f,
                         ),
@@ -378,11 +397,8 @@ fun DarkNightToggle(
                 }
 
                 ToggleStyle.ORB -> {
-                    drawRoundRect(
-                        brush = Brush.verticalGradient(listOf(Color(0xFF0E0E10), Color(0xFF1A1A1D))),
-                        cornerRadius = rTrack,
-                    )
-                    drawRoundRect(color = Color.White.copy(alpha = 0.28f), cornerRadius = rTrack, style = Stroke(0.035f * em))
+                    drawRoundRect(brush = Brush.verticalGradient(listOf(tk.t0, tk.t1)), cornerRadius = rTrack)
+                    drawRoundRect(color = tk.tb, cornerRadius = rTrack, style = Stroke(0.035f * em))
                     val rOrb = 0.39f * em
                     val cx = 0.11f * em + rOrb
                     if (progress > 0.05f) {
@@ -391,14 +407,14 @@ fun DarkNightToggle(
                     val orbBrush = if (progress > 0.5f) {
                         Brush.radialGradient(listOf(l, a, d), center = Offset(cx - 0.08f * em, h * 0.38f), radius = rOrb * 1.3f)
                     } else {
-                        Brush.radialGradient(listOf(Color(0xFF3A3A3E), Color(0xFF1E1E21)), center = Offset(cx, h * 0.40f), radius = rOrb * 1.3f)
+                        Brush.radialGradient(listOf(tk.th0, tk.th1), center = Offset(cx, h * 0.40f), radius = rOrb * 1.3f)
                     }
                     drawCircle(brush = orbBrush, radius = rOrb, center = Offset(cx, h / 2f))
                     val lbl = if (progress > 0.5f) "ON" else "OFF"
                     val lay = textMeasurer.measure(
                         lbl,
                         TextStyle(
-                            color = Color.White.copy(alpha = if (progress > 0.5f) 0.78f else 0.32f),
+                            color = if (progress > 0.5f) tk.tc else tk.tcOff,
                             fontSize = (0.30f * em).toSp(),
                             fontWeight = FontWeight.Black,
                         ),
@@ -407,12 +423,8 @@ fun DarkNightToggle(
                 }
 
                 ToggleStyle.DOTS -> {
-                    drawRoundRect(
-                        brush = Brush.verticalGradient(listOf(Color(0xFF14171C), Color(0xFF1F2329))),
-                        cornerRadius = rTrack,
-                    )
-                    drawRoundRect(color = Color(0xFF0B0D11), cornerRadius = rTrack, style = Stroke(0.04f * em))
-                    // Neon ON slot on right when ON
+                    drawRoundRect(brush = Brush.verticalGradient(listOf(tk.t0, tk.t1)), cornerRadius = rTrack)
+                    drawRoundRect(color = tk.tb, cornerRadius = rTrack, style = Stroke(0.04f * em))
                     val slotW = 0.96f * em
                     val slotH = 0.84f * em
                     val slotX = if (progress > 0.5f) w - slotW - 0.08f * em else 0.08f * em
@@ -432,7 +444,7 @@ fun DarkNightToggle(
                         )
                     } else {
                         drawRoundRect(
-                            color = Color(0xFF101216),
+                            color = tk.t0,
                             topLeft = Offset(slotX, slotY),
                             size = Size(slotW, slotH),
                             cornerRadius = CornerRadius(slotH / 2f, slotH / 2f),
@@ -442,19 +454,18 @@ fun DarkNightToggle(
                     val lay = textMeasurer.measure(
                         lbl,
                         TextStyle(
-                            color = if (progress > 0.5f) Color.White else Color(0xFF505665),
+                            color = if (progress > 0.5f) contrastOn(a) else tk.tcOff,
                             fontSize = (0.31f * em).toSp(),
                             fontWeight = FontWeight.Black,
                         ),
                     )
                     drawText(lay, topLeft = Offset(slotX + (slotW - lay.size.width) / 2f, (h - lay.size.height) / 2f))
-                    // Dark thumb with 4x3 dot grid (left when ON, right when OFF)
                     val tw = 1.30f * em
                     val th = 0.86f * em
                     val tx = (w - tw - 0.07f * em) * (1f - progress) + 0.07f * em * progress
                     val ty = (h - th) / 2f
                     drawRoundRect(
-                        brush = Brush.verticalGradient(listOf(Color(0xFF3A3E46), Color(0xFF252830))),
+                        brush = Brush.verticalGradient(listOf(tk.th0, tk.th1)),
                         topLeft = Offset(tx, ty),
                         size = Size(tw, th),
                         cornerRadius = CornerRadius(th / 2f, th / 2f),
@@ -462,7 +473,7 @@ fun DarkNightToggle(
                     for (gx in 0 until 4) {
                         for (gy in 0 until 3) {
                             drawCircle(
-                                color = Color(0xFF13151A),
+                                color = tk.t0,
                                 radius = 0.03f * em,
                                 center = Offset(tx + (0.36f + gx * 0.16f) * em, ty + (0.28f + gy * 0.15f) * em),
                             )
@@ -471,10 +482,7 @@ fun DarkNightToggle(
                 }
 
                 ToggleStyle.LENS -> {
-                    drawRoundRect(
-                        brush = Brush.verticalGradient(listOf(Color(0xFF15181F), Color(0xFF0E1016))),
-                        cornerRadius = rTrack,
-                    )
+                    drawRoundRect(brush = Brush.verticalGradient(listOf(tk.t0, tk.t1)), cornerRadius = rTrack)
                     if (progress > 0.05f) {
                         drawRoundRect(
                             brush = Brush.radialGradient(
@@ -485,23 +493,33 @@ fun DarkNightToggle(
                             cornerRadius = rTrack,
                         )
                     }
-                    drawRoundRect(color = Color.White.copy(alpha = 0.30f), cornerRadius = rTrack, style = Stroke(0.035f * em))
+                    drawRoundRect(color = tk.tb, cornerRadius = rTrack, style = Stroke(0.035f * em))
                     val lbl = if (progress > 0.5f) "ON" else "OFF"
                     val lay = textMeasurer.measure(
                         lbl,
                         TextStyle(
-                            color = Color.White.copy(alpha = if (progress > 0.5f) 0.95f else 0.42f),
+                            color = if (progress > 0.5f) Color.White else tk.tcOff,
                             fontSize = (0.30f * em).toSp(),
                             fontWeight = FontWeight.Bold,
                         ),
                     )
                     val lx = if (progress > 0.5f) 0.28f * em else w - 0.26f * em - lay.size.width
                     drawText(lay, topLeft = Offset(lx, (h - lay.size.height) / 2f))
-                    // Refractive glass lens thumb
                     val rLens = 0.46f * em
                     val cx = 0.04f * em + rLens + (w - 0.08f * em - 2f * rLens) * progress
-                    drawCircle(
-                        brush = Brush.radialGradient(
+                    val lensBrush = if (!glass.isDark) {
+                        // Light mode theme-matched refractive lens (.tm.lens8.lt .th)
+                        Brush.radialGradient(
+                            colorStops = arrayOf(
+                                0.00f to Color.White,
+                                0.40f to Color.White.copy(alpha = 0.65f),
+                                1.00f to lerp(a, Color.White, 0.75f),
+                            ),
+                            center = Offset(cx - 0.16f * em, h * 0.30f),
+                            radius = rLens * 1.35f,
+                        )
+                    } else {
+                        Brush.radialGradient(
                             colorStops = arrayOf(
                                 0.00f to Color.White.copy(alpha = 0.72f),
                                 0.42f to Color.White.copy(alpha = 0.16f),
@@ -510,11 +528,10 @@ fun DarkNightToggle(
                             ),
                             center = Offset(cx - 0.16f * em, h * 0.30f),
                             radius = rLens * 1.35f,
-                        ),
-                        radius = rLens,
-                        center = Offset(cx, h / 2f),
-                    )
-                    drawCircle(Color.White.copy(alpha = 0.58f), radius = rLens, center = Offset(cx, h / 2f), style = Stroke(0.03f * em))
+                        )
+                    }
+                    drawCircle(brush = lensBrush, radius = rLens, center = Offset(cx, h / 2f))
+                    drawCircle(if (!glass.isDark) tk.tb else Color.White.copy(alpha = 0.58f), radius = rLens, center = Offset(cx, h / 2f), style = Stroke(0.03f * em))
                 }
             }
         }
@@ -551,7 +568,6 @@ fun DarkNightToggleStyleSection(modifier: Modifier = Modifier) {
             fontSize = 12.sp,
         )
 
-        // 2x4 Live Tile Grid
         ToggleStyle.entries.chunked(2).forEach { pair ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -569,10 +585,10 @@ fun DarkNightToggleStyleSection(modifier: Modifier = Modifier) {
                                 DarkNightThemeStore.setToggleStyle(context, st)
                             },
                         shape = tileShape,
-                        color = if (glass.isDark) Color.White.copy(alpha = 0.05f) else Color.White.copy(alpha = 0.65f),
+                        color = if (glass.isDark) glass.surfaceHi.copy(alpha = 0.72f) else Color.White.copy(alpha = 0.65f),
                         border = BorderStroke(
                             width = if (isSelected) 2.dp else 1.dp,
-                            color = if (isSelected) glass.accent else glass.content.copy(alpha = 0.14f),
+                            color = if (isSelected) glass.accent else glass.outline,
                         ),
                     ) {
                         Box(modifier = Modifier.padding(10.dp)) {
@@ -619,7 +635,6 @@ fun DarkNightToggleStyleSection(modifier: Modifier = Modifier) {
             }
         }
 
-        // Color Mode
         Text(
             text = stringResource(R.string.toggle_color_mode),
             color = glass.contentSecondary,
@@ -668,7 +683,6 @@ fun DarkNightToggleStyleSection(modifier: Modifier = Modifier) {
             }
         }
 
-        // Size selector
         Text(
             text = stringResource(R.string.toggle_size_title),
             color = glass.contentSecondary,
@@ -693,7 +707,6 @@ fun DarkNightToggleStyleSection(modifier: Modifier = Modifier) {
             }
         }
 
-        // Live Preview Card (ON / OFF / Disabled)
         HorizontalDivider(color = glass.content.copy(alpha = 0.12f))
         Text(
             text = stringResource(R.string.toggle_live_preview),
@@ -730,7 +743,8 @@ fun DarkNightToggleStyleSection(modifier: Modifier = Modifier) {
                     DarkNightToggle(checked = previewOff, onCheckedChange = { previewOff = it })
                 }
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {

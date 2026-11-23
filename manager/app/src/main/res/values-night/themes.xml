@@ -8,8 +8,8 @@
 
     <style name="Theme.KernelSU.Starting" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/ic_launcher_darknight_splash_bg</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_darknight_full</item>
-        <item name="windowSplashScreenAnimationDuration">600</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_logo_animated</item>
+        <item name="windowSplashScreenAnimationDuration">1000</item>
         <item name="postSplashScreenTheme">@style/Theme.KernelSU</item>
     </style>
 

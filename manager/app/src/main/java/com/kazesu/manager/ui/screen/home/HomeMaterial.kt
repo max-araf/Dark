@@ -304,8 +304,7 @@ private fun StatusCard(
     val hasCustomCard = state.homeLayout == HomeLayout.IMMERSIVE ||
         state.homeCardImagePath.isNotEmpty() ||
         state.homeCardStickers.isNotEmpty()
-    val isDarkNightAura = LocalBackgroundImagePath.current == "darknight://aura"
-    if (isDarkNightAura && !hasCustomCard) {
+    if (!hasCustomCard) {
         val kind = when {
             ksuActive -> DarkNightStatusKind.WORKING
             state.isRootAvailable || state.isPreviewMode -> DarkNightStatusKind.LIMITED
@@ -970,7 +969,7 @@ private fun DarkNightToolboxCard(
                 Text(
                     text = "DarkNight Toolbox",
                     style = MaterialTheme.typography.titleMedium,
-                    color = Color.White,
+                    color = com.kazesu.manager.ui.theme.LocalDarkNightGlass.current.content,
                 )
                 Text(
                     text = "Game Profiles • Bypass Charge • Integrity Hub • Live Logs • Rescue",

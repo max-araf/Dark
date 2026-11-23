@@ -321,17 +321,17 @@ data class DarkNightFlatTokens(
 fun flatTokens(a: Color, dark: Boolean, amoled: Boolean): DarkNightFlatTokens =
     if (dark) {
         DarkNightFlatTokens(
-            base = if (amoled) Color.Black else lerp(a, Color.Black, 0.90f),
-            surface = lerp(a, Color.Black, 0.82f),
-            surfaceHi = lerp(a, Color.Black, 0.74f),
-            outline = a.copy(alpha = 0.20f),
+            base = if (amoled) Color.Black else lerp(a, Color.Black, 0.84f),
+            surface = lerp(a, Color.Black, if (amoled) 0.86f else 0.70f),
+            surfaceHi = lerp(a, Color.Black, 0.60f),
+            outline = a.copy(alpha = if (amoled) 0.45f else 0.40f),
         )
     } else {
         DarkNightFlatTokens(
-            base = lerp(a, Color.White, 0.94f),
-            surface = lerp(a, Color.White, 0.88f),
-            surfaceHi = lerp(a, Color.White, 0.82f),
-            outline = a.copy(alpha = 0.20f),
+            base = lerp(a, Color.White, 0.92f),
+            surface = lerp(a, Color.White, 0.84f),
+            surfaceHi = lerp(a, Color.White, 0.76f),
+            outline = a.copy(alpha = 0.32f),
         )
     }
 
@@ -1213,17 +1213,13 @@ fun DarkNightOnboardingOverlay(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Box(
+                    androidx.compose.foundation.Image(
+                        painter = androidx.compose.ui.res.painterResource(com.kazesu.manager.R.drawable.ic_dn_logo),
+                        contentDescription = "DarkNightSu",
                         modifier = Modifier
-                            .size(28.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(
-                                Brush.linearGradient(listOf(palette.primaryGlow, palette.secondaryGlow))
-                            ),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text("#", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                    }
+                            .size(30.dp)
+                            .clip(RoundedCornerShape(9.dp)),
+                    )
                     Text(
                         text = "DarkNightSu",
                         color = Color.White,

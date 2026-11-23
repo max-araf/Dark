@@ -391,7 +391,7 @@ fun DarkNightToolboxScreen() {
                             Text("Keybox X.509 Certificate Validator", color = LocalDarkNightGlass.current.content, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
                             Text(
                                 text = keyboxResult.summary,
-                                color = if (keyboxResult.validXml && keyboxResult.expiredCount == 0) Color(0xFF2EE59D) else Color(0xFFFFD60A),
+                                color = if (keyboxResult.validXml && keyboxResult.expiredCount == 0) if (LocalDarkNightGlass.current.isDark) Color(0xFF2EE59D) else Color(0xFF0A7D4F) else if (LocalDarkNightGlass.current.isDark) Color(0xFFFFD60A) else Color(0xFF9A6700),
                                 fontSize = 12.sp,
                             )
                             OutlinedButton(
@@ -417,7 +417,7 @@ fun DarkNightToolboxScreen() {
                             Text("RAM: ${telemetry.memUsedMb} MB / ${telemetry.memTotalMb} MB  •  Peak Temp: ${"%.1f".format(telemetry.maxTempC)}°C", color = LocalDarkNightGlass.current.content)
                             Spacer(modifier = Modifier.height(2.dp))
                             telemetry.clusters.forEach { c ->
-                                Text("${c.name}: ${c.curFreqMhz} MHz (${c.governor})", color = palette.secondaryGlow, fontSize = 12.sp)
+                                Text("${c.name}: ${c.curFreqMhz} MHz (${c.governor})", color = if (LocalDarkNightGlass.current.isDark) palette.secondaryGlow else LocalDarkNightGlass.current.accentDark, fontSize = 12.sp)
                             }
                         }
 
@@ -559,7 +559,7 @@ fun DarkNightToolboxScreen() {
 
                         DarkNightGlassCard(palette = palette, useBlur = false) {
                             Text("I/O Scheduler (${kernelTweaks.ioBlockDev.ifBlank { "none" }})", color = LocalDarkNightGlass.current.content, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
-                            Text("Active: ${kernelTweaks.ioCurrent}", color = palette.secondaryGlow, fontSize = 13.sp)
+                            Text("Active: ${kernelTweaks.ioCurrent}", color = if (LocalDarkNightGlass.current.isDark) palette.secondaryGlow else LocalDarkNightGlass.current.accentDark, fontSize = 13.sp)
                             if (kernelTweaks.ioAvailable.isEmpty()) {
                                 Text("No kernel I/O schedulers readable (root required).", color = LocalDarkNightGlass.current.contentSecondary, fontSize = 12.sp)
                             } else {
@@ -589,7 +589,7 @@ fun DarkNightToolboxScreen() {
 
                         DarkNightGlassCard(palette = palette, useBlur = false) {
                             Text("TCP Congestion Control", color = LocalDarkNightGlass.current.content, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
-                            Text("Active: ${kernelTweaks.tcpCurrent}", color = palette.secondaryGlow, fontSize = 13.sp)
+                            Text("Active: ${kernelTweaks.tcpCurrent}", color = if (LocalDarkNightGlass.current.isDark) palette.secondaryGlow else LocalDarkNightGlass.current.accentDark, fontSize = 13.sp)
                             if (kernelTweaks.tcpAvailable.isEmpty()) {
                                 Text("No TCP algorithms readable.", color = LocalDarkNightGlass.current.contentSecondary, fontSize = 12.sp)
                             } else {
