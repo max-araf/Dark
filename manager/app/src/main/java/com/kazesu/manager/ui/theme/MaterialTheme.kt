@@ -161,7 +161,9 @@ fun MaterialKernelSUTheme(
         typography = Typography,
         content = {
             MonetColorsProvider.UpdateCss(overlaidScheme)
-            content()
+            ProvideDarkNightContent {
+                content()
+            }
         }
     )
 }

@@ -77,6 +77,7 @@ import androidx.compose.ui.unit.round
 import androidx.compose.ui.zIndex
 import com.kazesu.manager.ui.theme.LocalBackgroundImagePath
 import com.kazesu.manager.ui.theme.backgroundAwareColor
+import com.kazesu.manager.ui.theme.darkNightFlatBorder
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
@@ -383,7 +384,7 @@ fun SegmentedListItem(
         checked = checked,
         onCheckedChange = onCheckedChange,
         shapes = LocalListItemShapes.current ?: ListItemDefaults.segmentedShapes(0, 1),
-        modifier = modifier,
+        modifier = modifier.darkNightFlatBorder((LocalListItemShapes.current ?: ListItemDefaults.segmentedShapes(0, 1)).shape),
         enabled = enabled,
         colors = colors,
         interactionSource = interactionSource,
@@ -416,7 +417,7 @@ fun SegmentedListItem(
         selected = selected,
         onClick = onClick,
         shapes = LocalListItemShapes.current ?: ListItemDefaults.segmentedShapes(0, 1),
-        modifier = modifier,
+        modifier = modifier.darkNightFlatBorder((LocalListItemShapes.current ?: ListItemDefaults.segmentedShapes(0, 1)).shape),
         enabled = enabled,
         colors = colors,
         interactionSource = interactionSource,
@@ -435,20 +436,10 @@ fun IconTile(
     icon: ImageVector,
     contentDescription: String?,
 ) {
-    Box(
-        modifier = Modifier
-            .size(36.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(colorScheme.secondaryContainer),
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = contentDescription,
-            modifier = Modifier.size(20.dp),
-            tint = colorScheme.onSecondaryContainer,
-        )
-    }
+    com.kazesu.manager.ui.component.DarkNightIconTile(
+        icon = icon,
+        contentDescription = contentDescription,
+    )
 }
 
 @Composable

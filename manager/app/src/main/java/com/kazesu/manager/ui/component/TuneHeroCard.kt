@@ -90,13 +90,7 @@ private fun TuneHeroCardMaterial(
                         maxLines = 2,
                     )
                 }
-                Image(
-                    painter = painterResource(R.drawable.ic_launcher_darknight_full),
-                    contentDescription = null,
-                    modifier = Modifier
-                        .size(44.dp)
-                        .clip(RoundedCornerShape(13.dp)),
-                )
+                DarkNightLogo(size = 44.dp)
             }
             if (locked) {
                 LockedHint()
@@ -140,13 +134,7 @@ private fun TuneHeroCardMiuix(
                     maxLines = 2,
                 )
             }
-            Image(
-                painter = painterResource(R.drawable.ic_launcher_darknight_full),
-                contentDescription = null,
-                modifier = Modifier
-                    .size(44.dp)
-                    .clip(RoundedCornerShape(13.dp)),
-            )
+            DarkNightLogo(size = 44.dp)
         }
         if (locked) {
             LockedHint()

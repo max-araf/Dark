@@ -417,7 +417,7 @@ class MainActivity : ComponentActivity() {
                             }
                             entry<Route.AppIcon>(swipeDismiss = swipeDismiss) { DarkNightScreenBackground { AppIconScreen() } }
                             entry<Route.BackgroundCrop>(swipeDismiss = NavSwipeDirection.None) { key ->
-                                BackgroundCropScreen(key.sourcePath)
+                                DarkNightScreenBackground { BackgroundCropScreen(key.sourcePath) }
                             }
                             entry<Route.AppProfileTemplate>(swipeDismiss = swipeDismiss) { DarkNightScreenBackground { AppProfileTemplateScreen() } }
                             entry<Route.TemplateEditor>(swipeDismiss = swipeDismiss) { key -> DarkNightScreenBackground { TemplateEditorScreen(key.template, key.readOnly) } }
@@ -426,32 +426,39 @@ class MainActivity : ComponentActivity() {
                             entry<Route.ModuleRepoDetail>(swipeDismiss = swipeDismiss) { key -> DarkNightScreenBackground { ModuleRepoDetailScreen(key.module) } }
                             entry<Route.Install>(swipeDismiss = swipeDismiss) { key -> DarkNightScreenBackground { InstallScreen(preselectedKernelUri = key.preselectedKernelUri) } }
                             entry<Route.Flash>(swipeDismiss = if (flashBackEnabled) swipeDismiss else NavSwipeDirection.None) { key ->
-                                FlashScreen(
-                                    key.flashIt,
-                                    onBackEnabledChange = { enabled ->
-                                        if (navigator.current() == key) flashBackEnabled = enabled
-                                    },
-                                )
+                                DarkNightScreenBackground {
+                                    FlashScreen(
+                                        key.flashIt,
+                                        onBackEnabledChange = { enabled ->
+                                            if (navigator.current() == key) flashBackEnabled = enabled
+                                        },
+                                    )
+                                }
                             }
                             entry<Route.ExecuteModuleAction>(swipeDismiss = swipeDismiss) { key ->
-                                ExecuteModuleActionScreen(
-                                    key.moduleId,
-                                    key.fromShortcut
-                                )
+                                DarkNightScreenBackground {
+                                    ExecuteModuleActionScreen(
+                                        key.moduleId,
+                                        key.fromShortcut
+                                    )
+                                }
                             }
                             entry<Route.ScriptRun>(swipeDismiss = scriptRunSwipeDismiss) { key ->
-                                ScriptRunScreen(
-                                    key.arg,
-                                    onBackEnabledChange = { enabled ->
-                                        if (navigator.current() == key) scriptRunBackEnabled = enabled
-                                    },
-                                )
+                                DarkNightScreenBackground {
+                                    ScriptRunScreen(
+                                        key.arg,
+                                        onBackEnabledChange = { enabled ->
+                                            if (navigator.current() == key) scriptRunBackEnabled = enabled
+                                        },
+                                    )
+                                }
                             }
                             entry<Route.Home>(swipeDismiss = swipeDismiss) { mainScreenEntry() }
                             entry<Route.SuperUser>(swipeDismiss = swipeDismiss) { mainScreenEntry() }
                             entry<Route.Module>(swipeDismiss = swipeDismiss) { mainScreenEntry() }
                             entry<Route.Settings>(swipeDismiss = swipeDismiss) { mainScreenEntry() }
                             entry<Route.KernelFlash>(swipeDismiss = swipeDismiss)  { key ->
+                                DarkNightScreenBackground {
                                     KernelFlashScreen(
                                         key.kernelUri,
                                         key.selectedSlot,
@@ -459,6 +466,7 @@ class MainActivity : ComponentActivity() {
                                         key.kpmUndoPatch
                                     )
                                 }
+                            }
                                 entry<Route.Kpm>(swipeDismiss = swipeDismiss)  { DarkNightScreenBackground { KpmScreen() } }
                                 entry<Route.SuSFS>(swipeDismiss = swipeDismiss)  { key -> DarkNightScreenBackground { SuSFSScreen(key.tab) } }
                                 entry<Route.Tool>(swipeDismiss = swipeDismiss)  { DarkNightScreenBackground { ToolsScreen() } }
@@ -624,10 +632,9 @@ class MainActivity : ComponentActivity() {
 
                         DarkNightGlassToastHost(palette = darkNightTheme.palette)
 
-                        DarkNightOnboardingOverlay(
+                        com.kazesu.manager.ui.screen.onboarding.DarkNightFirstRunOnboarding(
                             visible = !darkNightTheme.onboardingCompleted,
-                            palette = darkNightTheme.palette,
-                            onFinish = { DarkNightThemeStore.setOnboardingCompleted(context, true) },
+                            onFinished = { DarkNightThemeStore.setOnboardingCompleted(context, true) },
                         )
 
                         if (!splashDismissed) {

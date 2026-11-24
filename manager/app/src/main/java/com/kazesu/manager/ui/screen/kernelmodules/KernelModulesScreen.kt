@@ -64,7 +64,7 @@ fun KernelModulesScreen() {
         },
         onCopy = { value ->
             val clipboard = context.getSystemService(ClipboardManager::class.java)
-            clipboard?.setPrimaryClip(ClipData.newPlainText("KazeSU block_modules", value))
+            clipboard?.setPrimaryClip(ClipData.newPlainText("DarkNightSu block_modules", value))
             Toast.makeText(context, copiedText, Toast.LENGTH_SHORT).show()
         },
     )

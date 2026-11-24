@@ -974,13 +974,13 @@ private fun DarkNightToolboxCard(
                 Text(
                     text = "Game Profiles • Bypass Charge • Integrity Hub • Live Logs • Rescue",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.White.copy(alpha = 0.65f),
+                    color = com.kazesu.manager.ui.theme.LocalDarkNightGlass.current.contentSecondary,
                 )
             }
             Icon(
                 painter = painterResource(R.drawable.ic_dn_chevron),
                 contentDescription = null,
-                tint = Color.White.copy(alpha = 0.72f),
+                tint = com.kazesu.manager.ui.theme.LocalDarkNightGlass.current.accentText,
             )
         }
     }

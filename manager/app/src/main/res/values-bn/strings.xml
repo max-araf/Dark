@@ -117,4 +117,40 @@
     <string name="toggle_size_medium">মাঝারি</string>
     <string name="toggle_size_large">বড়</string>
     <string name="toggle_live_preview">লাইভ প্রিভিউ</string>
+
+    <!-- DarkNightSu v8.0.0 Onboarding (merged) -->
+    <string name="onb_p1_tag">স্বাগতম</string>
+    <string name="onb_p1_title">স্টেলথ রুট ও\nপূর্ণ নিয়ন্ত্রণ।</string>
+    <string name="onb_p1_sub">কার্নেল-লেভেল রুট, SuSFS হাইডিং ও গ্লাস-স্মুথ ম্যানেজার। সেটআপ করতে এক মিনিটেরও কম লাগবে।</string>
+    <string name="onb_p1_cta">শুরু করুন</string>
+    <string name="onb_p2_tag">শুরুর আগে</string>
+    <string name="onb_p2_title">দায়িত্বশীলভাবে\nব্যবহার করুন।</string>
+    <string name="onb_p2_sub">ডিভাইসে কোনো পরিবর্তনের আগে এই তিনটি বিষয়ে সম্মত হতে হবে।</string>
+    <string name="onb_p2_c1">রুট ও কার্নেল ফ্ল্যাশ করলে ওয়ারেন্টি বাতিল হতে পারে</string>
+    <string name="onb_p2_c2">ফ্ল্যাশ করার আগে আমি বুট ব্যাকআপ রাখবো</string>
+    <string name="onb_p2_c3">রুট দিয়ে করা সব পরিবর্তনের দায়িত্ব আমি নিচ্ছি</string>
+    <string name="onb_p2_cta">পরবর্তী</string>
+    <string name="onb_p3_tag">কার্নেল</string>
+    <string name="onb_p3_title">কার্নেল যাচাই\nকরা হচ্ছে।</string>
+    <string name="onb_p3_sub">আমরা KernelSU ইন্টারফেস ও SuSFS চেক করছি।</string>
+    <string name="onb_p3_r1">কার্নেল ইন্টারফেস</string>
+    <string name="onb_p3_r2">SuSFS স্টেলথ</string>
+    <string name="onb_p3_r3">রুট অ্যাক্সেস</string>
+    <string name="onb_p3_cta">পরবর্তী</string>
+    <string name="onb_p4_tag">অনুমতি</string>
+    <string name="onb_p4_title">তিনটি\nপারমিশন।</string>
+    <string name="onb_p4_sub">প্যাচ, ব্যাকআপ ও নোটিফিকেশনের জন্য শুধু প্রয়োজনীয় অনুমতি।</string>
+    <string name="onb_p4_r1">রুট অনুমতি</string>
+    <string name="onb_p4_r2">স্টোরেজ ও ব্যাকআপ</string>
+    <string name="onb_p4_r3">নোটিফিকেশন</string>
+    <string name="onb_p4_cta">অনুমতি দিন</string>
+    <string name="onb_p5_tag">প্রস্তুত</string>
+    <string name="onb_p5_title">সব প্রস্তুত।</string>
+    <string name="onb_p5_sub">আপনার কার্নেল প্রস্তুত। মডিউল, প্রোফাইল ও থিম ম্যানেজ করতে ড্যাশবোর্ড খুলুন।</string>
+    <string name="onb_p5_cta">DarkNightSu চালু করুন</string>
+    <string name="onb_not_detected">পাওয়া যায়নি</string>
+    <string name="onb_ready">প্রস্তুত</string>
+    <string name="onb_granted">অনুমোদিত</string>
+    <string name="onb_pending">বাকি</string>
+    <string name="onb_allow">অনুমতি দিন</string>
 </resources>

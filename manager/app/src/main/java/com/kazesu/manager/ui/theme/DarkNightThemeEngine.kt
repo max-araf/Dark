@@ -344,6 +344,7 @@ data class DarkNightGlassTheme(
     val outline: Color,
     val accent: Color,
     val accentDark: Color,
+    val accentText: Color,
     val lite: Color,
     val fillA: Color,
     val fillB: Color,
@@ -363,9 +364,14 @@ fun buildDarkNightGlassTheme(
 ): DarkNightGlassTheme {
     val a = palette.primaryGlow
     val accentDark = lerp(a, Color(0xFF0B1020), if (a.luminance() > 0.55f) 0.50f else 0.30f)
+    val accentText = if (isDark) {
+        if (a.luminance() < 0.35f) lerp(a, Color.White, 0.38f) else a
+    } else {
+        accentDark
+    }
     val tokens = flatTokens(a, isDark, amoled)
     if (flat) {
-        val content = if (isDark) Color.White.copy(alpha = 0.92f) else Color(0xFF0B1020)
+        val content = if (isDark) Color.White.copy(alpha = 0.94f) else Color(0xFF0B1020)
         return DarkNightGlassTheme(
             isDark = isDark,
             flat = true,
@@ -375,6 +381,7 @@ fun buildDarkNightGlassTheme(
             outline = tokens.outline,
             accent = a,
             accentDark = accentDark,
+            accentText = accentText,
             lite = lerp(a, Color.White, 0.38f),
             fillA = tokens.surface,
             fillB = tokens.surface,
@@ -382,7 +389,7 @@ fun buildDarkNightGlassTheme(
             shadow = Color.Black.copy(alpha = if (isDark) 0.22f else 0.08f),
             highlight = Color.Transparent,
             content = content,
-            contentSecondary = content.copy(alpha = 0.60f),
+            contentSecondary = content.copy(alpha = if (isDark) 0.74f else 0.70f),
             systemBarIconsLight = !isDark,
         )
     }
@@ -396,6 +403,7 @@ fun buildDarkNightGlassTheme(
             outline = tokens.outline,
             accent = a,
             accentDark = accentDark,
+            accentText = accentText,
             lite = palette.secondaryGlow,
             fillA = Color.White.copy(alpha = 0.13f),
             fillB = Color.White.copy(alpha = 0.04f),
@@ -403,7 +411,7 @@ fun buildDarkNightGlassTheme(
             shadow = Color.Black.copy(alpha = 0.16f),
             highlight = Color.White.copy(alpha = 0.12f),
             content = Color.White,
-            contentSecondary = Color.White.copy(alpha = 0.62f),
+            contentSecondary = Color.White.copy(alpha = 0.74f),
             systemBarIconsLight = false,
         )
     } else {
@@ -416,6 +424,7 @@ fun buildDarkNightGlassTheme(
             outline = tokens.outline,
             accent = a,
             accentDark = accentDark,
+            accentText = accentText,
             lite = palette.secondaryGlow,
             fillA = Color.White.copy(alpha = 0.72f),
             fillB = Color.White.copy(alpha = 0.34f),
@@ -423,7 +432,7 @@ fun buildDarkNightGlassTheme(
             shadow = accentDark.copy(alpha = 0.14f),
             highlight = Color.White.copy(alpha = 0.95f),
             content = Color(0xFF0B1020),
-            contentSecondary = Color(0xFF0B1020).copy(alpha = 0.62f),
+            contentSecondary = Color(0xFF0B1020).copy(alpha = 0.70f),
             systemBarIconsLight = true,
         )
     }
@@ -443,6 +452,15 @@ fun rememberDarkNightGlassTheme(
  * C1: Propagates LocalContentColor and LocalTextStyle so child Text/Icon inside any glass or flat card
  * automatically receives high-contrast glass.content.
  */
+/**
+ * E4 (v8): Applies a crisp 1dp palette-tinted outline in Flat mode (when Frosted Glass is OFF).
+ */
+@Composable
+fun Modifier.darkNightFlatBorder(shape: Shape): Modifier {
+    val g = LocalDarkNightGlass.current
+    return if (g.flat) this.border(1.dp, g.outline, shape) else this
+}
+
 @Composable
 fun ProvideDarkNightContent(content: @Composable () -> Unit) {
     val g = LocalDarkNightGlass.current
@@ -1213,13 +1231,7 @@ fun DarkNightOnboardingOverlay(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    androidx.compose.foundation.Image(
-                        painter = androidx.compose.ui.res.painterResource(com.kazesu.manager.R.drawable.ic_dn_logo),
-                        contentDescription = "DarkNightSu",
-                        modifier = Modifier
-                            .size(30.dp)
-                            .clip(RoundedCornerShape(9.dp)),
-                    )
+                    com.kazesu.manager.ui.component.DarkNightLogo(size = 30.dp)
                     Text(
                         text = "DarkNightSu",
                         color = Color.White,

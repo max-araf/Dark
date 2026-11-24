@@ -337,15 +337,10 @@ fun DarkNightGlassSidebarOverlay(
                         .padding(top = 14.dp, bottom = 10.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    // Fixed 36x36dp square logo (never stretches!)
-                    Image(
-                        painter = painterResource(R.drawable.ic_launcher_darknight_full),
-                        contentDescription = stringResource(R.string.app_name),
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(RoundedCornerShape(11.dp))
-                            .clickable(enabled = !expanded) { expanded = true },
-                        contentScale = ContentScale.Crop,
+                    // Fixed 36x36dp themed logo (PART 2.2)
+                    DarkNightLogo(
+                        size = 36.dp,
+                        modifier = Modifier.clickable(enabled = !expanded) { expanded = true },
                     )
 
                     Spacer(modifier = Modifier.height(10.dp))
@@ -402,11 +397,7 @@ fun DarkNightGlassSidebarOverlay(
                             .clickable(enabled = !expanded) { onOpenAbout() },
                         contentAlignment = Alignment.Center,
                     ) {
-                        Image(
-                            painter = painterResource(R.drawable.ic_dn_logo),
-                            contentDescription = "About",
-                            modifier = Modifier.size(24.dp).clip(RoundedCornerShape(7.dp)),
-                        )
+                        DarkNightLogo(size = 24.dp)
                     }
                 }
             }
@@ -436,14 +427,7 @@ fun DarkNightGlassSidebarOverlay(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        Image(
-                            painter = painterResource(R.drawable.ic_launcher_darknight_full),
-                            contentDescription = stringResource(R.string.app_name),
-                            modifier = Modifier
-                                .size(44.dp)
-                                .clip(RoundedCornerShape(13.dp)),
-                            contentScale = ContentScale.Crop,
-                        )
+                        DarkNightLogo(size = 44.dp)
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = stringResource(R.string.app_name),
@@ -559,7 +543,7 @@ fun DarkNightGlassSidebarOverlay(
                                     .border(1.dp, palette.secondaryGlow.copy(alpha = 0.55f), CircleShape),
                                 contentAlignment = Alignment.Center,
                             ) {
-                                Image(painter = painterResource(R.drawable.ic_dn_logo), contentDescription = "DarkNightSu", modifier = Modifier.size(26.dp).clip(RoundedCornerShape(7.dp)))
+                                DarkNightLogo(size = 26.dp)
                             }
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(

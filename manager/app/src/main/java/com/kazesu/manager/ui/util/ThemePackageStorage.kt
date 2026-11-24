@@ -239,7 +239,7 @@ object ThemePackageStorage {
 
     fun packageFileName(): String {
         val stamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmm"))
-        return "KazeSU-theme-$stamp.sukisu"
+        return "DarkNightSu-theme-$stamp.sukisu"
     }
 
     suspend fun export(

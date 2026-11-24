@@ -101,14 +101,7 @@ fun AboutScreenMaterial(
                         // The hero shows the KazeSU leaf mark itself. The launcher icon depends on
                         // the selected app-icon pack, which made the about page advertise whichever
                         // icon was active instead of the brand.
-                        Image(
-                            painter = painterResource(R.drawable.ic_launcher_darknight_full),
-                            contentDescription = state.appName,
-                            modifier = Modifier
-                                .size(84.dp)
-                                .clip(RoundedCornerShape(22.dp)),
-                            contentScale = ContentScale.Crop,
-                        )
+                        com.kazesu.manager.ui.component.DarkNightLogo(size = 96.dp)
                         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             Text(
                                 text = state.appName,

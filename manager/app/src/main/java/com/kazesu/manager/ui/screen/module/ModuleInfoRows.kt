@@ -101,6 +101,6 @@ fun moduleInfoText(rows: List<ModuleInfoRow>): String =
 fun copyModuleInfo(context: Context, value: String, feedback: String) {
     if (value.isBlank()) return
     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-    clipboard.setPrimaryClip(ClipData.newPlainText("KazeSU module info", value))
+    clipboard.setPrimaryClip(ClipData.newPlainText("DarkNightSu module info", value))
     Toast.makeText(context, feedback, Toast.LENGTH_SHORT).show()
 }
