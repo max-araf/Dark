@@ -36,11 +36,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Edit
-import androidx.compose.material.icons.outlined.Key
-import androidx.compose.material.icons.outlined.Memory
-import androidx.compose.material.icons.outlined.WavingHand
+import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -216,7 +216,7 @@ fun DarkNightFirstRunOnboarding(
                 ) { p ->
                     when (p) {
                         0 -> OnboardingPageBody(
-                            icon = Icons.Outlined.WavingHand,
+                            icon = Icons.Outlined.Star,
                             tag = stringResource(R.string.onb_p1_tag),
                             title = stringResource(R.string.onb_p1_title),
                             subtitle = stringResource(R.string.onb_p1_sub),
@@ -259,7 +259,7 @@ fun DarkNightFirstRunOnboarding(
                         }
 
                         2 -> OnboardingPageBody(
-                            icon = Icons.Outlined.Memory,
+                            icon = Icons.Outlined.Info,
                             tag = stringResource(R.string.onb_p3_tag),
                             title = stringResource(R.string.onb_p3_title),
                             subtitle = stringResource(R.string.onb_p3_sub),
@@ -286,7 +286,7 @@ fun DarkNightFirstRunOnboarding(
                         }
 
                         3 -> OnboardingPageBody(
-                            icon = Icons.Outlined.Key,
+                            icon = Icons.Outlined.Lock,
                             tag = stringResource(R.string.onb_p4_tag),
                             title = stringResource(R.string.onb_p4_title),
                             subtitle = stringResource(R.string.onb_p4_sub),
@@ -313,7 +313,7 @@ fun DarkNightFirstRunOnboarding(
                         }
 
                         else -> OnboardingPageBody(
-                            icon = Icons.Outlined.AutoAwesome,
+                            icon = Icons.Outlined.CheckCircle,
                             tag = stringResource(R.string.onb_p5_tag),
                             title = stringResource(R.string.onb_p5_title),
                             subtitle = stringResource(R.string.onb_p5_sub),

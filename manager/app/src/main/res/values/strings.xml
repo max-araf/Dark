@@ -2043,36 +2043,32 @@
 
     <!-- DarkNightSu v8.0.0 First-Launch Onboarding -->
     <string name="onb_p1_tag">WELCOME</string>
-    <string name="onb_p1_title">Stealth root &amp;
-full control.</string>
+    <string name="onb_p1_title">Stealth root &amp;\nfull control.</string>
     <string name="onb_p1_sub">Kernel-level root, SuSFS hiding and a glass-smooth manager. Setup takes under a minute.</string>
     <string name="onb_p1_cta">Get started</string>
     <string name="onb_p2_tag">BEFORE YOU START</string>
-    <string name="onb_p2_title">Use it
-responsibly.</string>
+    <string name="onb_p2_title">Use it\nresponsibly.</string>
     <string name="onb_p2_sub">Three things to agree to before anything is changed on your device.</string>
     <string name="onb_p2_c1">I understand root &amp; kernel flashing may void device warranty</string>
     <string name="onb_p2_c2">I will keep a clean boot backup before flashing</string>
     <string name="onb_p2_c3">I take full responsibility for changes made with root</string>
     <string name="onb_p2_cta">Continue</string>
     <string name="onb_p3_tag">KERNEL</string>
-    <string name="onb_p3_title">Checking your
-kernel.</string>
+    <string name="onb_p3_title">Checking your\nkernel.</string>
     <string name="onb_p3_sub">We look for the KernelSU interface and SuSFS.</string>
     <string name="onb_p3_r1">Kernel interface</string>
     <string name="onb_p3_r2">SuSFS stealth</string>
     <string name="onb_p3_r3">Root access</string>
     <string name="onb_p3_cta">Continue</string>
     <string name="onb_p4_tag">ACCESS</string>
-    <string name="onb_p4_title">Three
-permissions.</string>
+    <string name="onb_p4_title">Three\npermissions.</string>
     <string name="onb_p4_sub">Only what DarkNightSu needs to patch, back up and keep you informed.</string>
     <string name="onb_p4_r1">Root privileges</string>
     <string name="onb_p4_r2">Storage &amp; backups</string>
     <string name="onb_p4_r3">Notifications</string>
     <string name="onb_p4_cta">Grant access</string>
     <string name="onb_p5_tag">READY</string>
-    <string name="onb_p5_title">You're all set.</string>
+    <string name="onb_p5_title">You\'re all set.</string>
     <string name="onb_p5_sub">Your kernel is ready. Open the dashboard to manage modules, profiles and themes.</string>
     <string name="onb_p5_cta">Launch DarkNightSu</string>
     <string name="onb_not_detected">Not detected</string>
