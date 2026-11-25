@@ -2076,4 +2076,9 @@
     <string name="onb_granted">Granted</string>
     <string name="onb_pending">Pending</string>
     <string name="onb_allow">Allow</string>
+    <!-- DarkNightSu v8.1.0 Non-Root Install & Patcher -->
+    <string name="install_kpm_needs_arm64">KPM patch needs an arm64 device. This device only supports: %1$s</string>
+    <string name="install_kpm_manual_required">Select your boot.img (required without root)</string>
+    <string name="install_kpm_manual_required_title">Select boot.img (required without root)</string>
+    <string name="install_anykernel_root_required">AnyKernel3 flashing needs root. Without root, use KPM operation on a boot.img file instead.</string>
 </resources>

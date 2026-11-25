@@ -233,6 +233,7 @@ fun DarkNightGlassSidebarOverlay(
     onOpenSendLogs: () -> Unit,
     onOpenAbout: () -> Unit,
     onExpandedChange: (Boolean) -> Unit = {},
+    rootTabsVisible: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -251,13 +252,15 @@ fun DarkNightGlassSidebarOverlay(
     }
     val deviceModel = remember { Build.MODEL.ifBlank { "Android Device" } }
 
-    val menuItems = listOf(
-        SidebarMenuItem("home", R.string.home, R.drawable.ic_dn_home) { onSelectPage(0) },
-        SidebarMenuItem("superuser", R.string.superuser, R.drawable.ic_dn_superuser) { onSelectPage(1) },
-        SidebarMenuItem("module", R.string.module, R.drawable.ic_dn_module, badgeCount = moduleBadgeCount) { onSelectPage(2) },
-        SidebarMenuItem("darktune", R.string.kernel_tuning, R.drawable.ic_dn_darktune) { onOpenDarkTune() },
-        SidebarMenuItem("toolbox", R.string.darknight_toolbox_title, R.drawable.ic_dn_toolbox) { onOpenToolbox() },
-    )
+    val menuItems = buildList {
+        add(SidebarMenuItem("home", R.string.home, R.drawable.ic_dn_home) { onSelectPage(0) })
+        if (rootTabsVisible) {
+            add(SidebarMenuItem("superuser", R.string.superuser, R.drawable.ic_dn_superuser) { onSelectPage(1) })
+            add(SidebarMenuItem("module", R.string.module, R.drawable.ic_dn_module, badgeCount = moduleBadgeCount) { onSelectPage(2) })
+            add(SidebarMenuItem("darktune", R.string.kernel_tuning, R.drawable.ic_dn_darktune) { onOpenDarkTune() })
+        }
+        add(SidebarMenuItem("toolbox", R.string.darknight_toolbox_title, R.drawable.ic_dn_toolbox) { onOpenToolbox() })
+    }
 
     val systemItems = listOf(
         SidebarMenuItem("theme", R.string.darknight_nav_theme_studio, R.drawable.ic_dn_theme) { onOpenThemeStudio() },

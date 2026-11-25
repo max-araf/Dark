@@ -25,6 +25,7 @@ internal data class InstallUiState(
     val kpmBootExpanded: Boolean,
     val kpmBootUri: android.net.Uri?,
     val canPatchKpm: Boolean,
+    val rootAvailable: Boolean,
     val blockModulesEnabled: Boolean,
     val blockModules: String,
     val blockModulesValid: Boolean,
@@ -34,9 +35,13 @@ internal data class InstallUiState(
 ) {
     val kpmEnabled: Boolean get() = kpmPatchOption.enabled
     val canInstall: Boolean
-        get() = if (installMethod == null) canPatchKpm && kpmEnabled else blockModulesValid
+        get() = if (installMethod == null) {
+            canPatchKpm && kpmEnabled && (rootAvailable || kpmBootUri != null)
+        } else {
+            blockModulesValid
+        }
     val canSelectKpmBoot: Boolean
-        get() = kpmEnabled && installMethod !is InstallMethod.HorizonKernel
+        get() = canPatchKpm && kpmEnabled && installMethod !is InstallMethod.HorizonKernel
 }
 
 @Immutable

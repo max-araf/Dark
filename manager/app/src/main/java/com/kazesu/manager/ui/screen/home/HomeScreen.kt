@@ -36,6 +36,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.kazesu.manager.Natives
 import com.kazesu.manager.R
 import com.kazesu.manager.magica.MagicaService
 import com.kazesu.manager.ui.LocalMainPagerState
@@ -134,8 +135,8 @@ fun HomePager(
     )
     val actions = HomeActions(
         onInstallClick = { navigator.push(Route.Install()) },
-        onSuperuserClick = { mainPagerState.animateToPage(BottomBarDestination.SuperUser.ordinal) },
-        onModuleClick = { mainPagerState.animateToPage(BottomBarDestination.Module.ordinal) },
+        onSuperuserClick = { if (Natives.isFullFeatured()) mainPagerState.animateToPage(BottomBarDestination.SuperUser.ordinal) },
+        onModuleClick = { if (Natives.isFullFeatured()) mainPagerState.animateToPage(BottomBarDestination.Module.ordinal) },
         onOpenUrl = uriHandler::openUri,
         onCiUpdateClick = { startUpdate(true) },
         onReleaseUpdateClick = { startUpdate(false) },

@@ -148,4 +148,9 @@
     <string name="settings_check_ci_update">Verificar atualizações de CI</string>
     <string name="settings_check_ci_update_summary">Verificar compilações de CI da branch main na página inicial e notificar quando houver uma atualização disponível.</string>
     <string name="settings_module_check_update">Verificar atualizações de módulos</string>
+    <!-- DarkNightSu v8.1.0 Non-Root Install & Patcher -->
+    <string name="install_kpm_needs_arm64">O patch KPM precisa de um dispositivo arm64. Este dispositivo suporta apenas: %1$s</string>
+    <string name="install_kpm_manual_required">Selecione seu boot.img (obrigatório sem root)</string>
+    <string name="install_kpm_manual_required_title">Selecionar boot.img (obrigatório sem root)</string>
+    <string name="install_anykernel_root_required">Instalar AnyKernel3 requer root. Sem root, use a operação KPM em um arquivo boot.img.</string>
 </resources>

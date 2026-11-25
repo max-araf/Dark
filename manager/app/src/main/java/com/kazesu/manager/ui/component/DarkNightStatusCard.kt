@@ -469,6 +469,22 @@ fun DarkNightStatusCardMaterial(
                     if (isPressed) drawRect(glass.lite.copy(alpha = 0.16f))
                 }
 
+                // 4b. Subtle bottom scrim behind bottom-start text for legibility over NeonFlow waves
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .height(72.dp)
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(
+                                    Color.Transparent,
+                                    glass.base.copy(alpha = 0.55f),
+                                )
+                            )
+                        )
+                )
+
                 // 5. Card Text Content
                 Box(
                     modifier = Modifier

@@ -23,12 +23,11 @@ fun NavigationRailMiuix(
     modifier: Modifier = Modifier,
 ) {
     val fullFeatured = Natives.isFullFeatured()
-    if (!fullFeatured) return
 
     val mainState = LocalMainPagerState.current
 
-    val items = BottomBarDestination.entries.map { destination ->
-        Pair(customText(destination.textKey), destination.icon)
+    val items = visibleBottomBarDestinations(fullFeatured).map { destination ->
+        Triple(destination, customText(destination.textKey), destination.icon)
     }
     val settingsRepo = remember { SettingsRepositoryImpl() }
     val state = rememberNavigationRailState(
@@ -49,15 +48,16 @@ fun NavigationRailMiuix(
         expandContentDescription = stringResource(R.string.nav_rail_expand),
         collapseContentDescription = stringResource(R.string.nav_rail_collapse),
     ) {
-        items.forEachIndexed { index, (label, icon) ->
+        items.forEach { (destination, label, icon) ->
+            val pageIndex = destination.ordinal
             NavigationRailItem(
-                selected = mainState.selectedPage == index,
+                selected = mainState.selectedPage == pageIndex,
                 onClick = {
-                    mainState.animateToPage(index)
+                    mainState.animateToPage(pageIndex)
                 },
                 icon = icon,
                 label = label,
-                badge = navigationBadgeFor(index, navigationBadge),
+                badge = navigationBadgeFor(pageIndex, navigationBadge),
             )
         }
     }

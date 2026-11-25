@@ -6,6 +6,7 @@ import com.kazesu.manager.getKernelVersion
 import com.kazesu.manager.ksuApp
 import com.kazesu.manager.ui.kernelFlash.util.KpmTools
 import com.topjohnwu.superuser.CallbackList
+import com.topjohnwu.superuser.Shell
 import java.io.File
 import java.nio.file.Files
 
@@ -25,7 +26,13 @@ fun patchKpmBoot(
         val err = object : CallbackList<String?>() {
             override fun onAddElement(s: String?) { s?.let(onStderr) }
         }
-        val result = withNewRootShell { newJob().add(cmd).to(out, err).exec() }
+        val result = if (uri != null && !rootAvailable()) {
+            Shell.Builder.create().build("sh").use { shell ->
+                shell.newJob().add(cmd).to(out, err).exec()
+            }
+        } else {
+            withNewRootShell { newJob().add(cmd).to(out, err).exec() }
+        }
         check(result.isSuccess) { "Command failed (${result.code}): $cmd" }
     }
     fun read(cmd: String): String = withNewRootShell {
@@ -150,6 +157,11 @@ fun patchKpmBoot(
         onStderr(message)
         return FlashResult(1, message, false)
     } finally {
-        runCatching { work?.let { removeAsRoot(it.absolutePath) } }
+        runCatching {
+            work?.let {
+                if (uri != null && !rootAvailable()) it.deleteRecursively()
+                else removeAsRoot(it.absolutePath)
+            }
+        }
     }
 }

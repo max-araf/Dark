@@ -153,4 +153,9 @@
     <string name="onb_granted">অনুমোদিত</string>
     <string name="onb_pending">বাকি</string>
     <string name="onb_allow">অনুমতি দিন</string>
+    <!-- DarkNightSu v8.1.0 Non-Root Install & Patcher -->
+    <string name="install_kpm_needs_arm64">KPM প্যাচের জন্য arm64 ডিভাইস প্রয়োজন। এই ডিভাইস শুধু সাপোর্ট করে: %1$s</string>
+    <string name="install_kpm_manual_required">আপনার boot.img সিলেক্ট করুন (রুট ছাড়া আবশ্যক)</string>
+    <string name="install_kpm_manual_required_title">boot.img সিলেক্ট করুন (রুট ছাড়া আবশ্যক)</string>
+    <string name="install_anykernel_root_required">AnyKernel3 ফ্ল্যাশ করতে রুট প্রয়োজন। রুট ছাড়া boot.img ফাইলে KPM অপারেশন ব্যবহার করুন।</string>
 </resources>

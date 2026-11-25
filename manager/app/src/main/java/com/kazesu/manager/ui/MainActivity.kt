@@ -73,6 +73,7 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigationevent.NavigationEventInfo
@@ -688,7 +689,16 @@ fun MainScreen(
             mainPagerState.animateToPage(initialPage)
         }
     }
-    val isFullFeatured = Natives.isFullFeatured()
+    var isFullFeatured by remember { mutableStateOf(Natives.isFullFeatured()) }
+    LifecycleResumeEffect(Unit) {
+        isFullFeatured = Natives.isFullFeatured()
+        onPauseOrDispose { }
+    }
+    LaunchedEffect(isFullFeatured, mainPagerState.selectedPage) {
+        if (!isFullFeatured && mainPagerState.selectedPage in 1..2) {
+            mainPagerState.animateToPage(0)
+        }
+    }
     val pagerMode = PagerInterceptionMode.entries.getOrElse(pagerInterceptionMode) {
         PagerInterceptionMode.Native
     }
@@ -827,8 +837,8 @@ fun MainScreen(
                     val isCurrentPage = page == settledPage
                     when (page) {
                         0 -> if (contentReady || isCurrentPage) HomePager(navController, bottomInnerPadding, isCurrentPage)
-                        1 -> if (contentReady || isCurrentPage) SuperUserPager(navController, bottomInnerPadding, isCurrentPage)
-                        2 -> if (contentReady || isCurrentPage) ModulePager(bottomInnerPadding, isCurrentPage)
+                        1 -> if (isFullFeatured && (contentReady || isCurrentPage)) SuperUserPager(navController, bottomInnerPadding, isCurrentPage)
+                        2 -> if (isFullFeatured && (contentReady || isCurrentPage)) ModulePager(bottomInnerPadding, isCurrentPage)
                         3 -> if (contentReady || isCurrentPage) SettingPager(navController, bottomInnerPadding, isCurrentPage)
                     }
                 }
@@ -864,8 +874,8 @@ fun MainScreen(
                         ) { page ->
                             when (page) {
                                 0 -> HomePager(navController, sidebarBottomPad, true)
-                                1 -> SuperUserPager(navController, sidebarBottomPad, true)
-                                2 -> ModulePager(sidebarBottomPad, true)
+                                1 -> if (isFullFeatured) SuperUserPager(navController, sidebarBottomPad, true)
+                                2 -> if (isFullFeatured) ModulePager(sidebarBottomPad, true)
                                 3 -> SettingPager(navController, sidebarBottomPad, true)
                             }
                         }
@@ -893,6 +903,7 @@ fun MainScreen(
                         moduleBadgeCount = navigationBadge.moduleEnabledCount,
                         backdrop = sidebarBackdrop,
                         animationsEnabled = sidebarThemeState.startupAnimEnabled,
+                        rootTabsVisible = isFullFeatured,
                         onSelectPage = { page -> mainPagerState.animateToPage(page) },
                         onOpenDarkTune = { navController.push(Route.Tune) },
                         onOpenToolbox = { navController.push(Route.DarkNightToolbox) },
@@ -965,8 +976,8 @@ fun MainScreen(
                         ) { page ->
                             when (page) {
                                 0 -> HomePager(navController, dockClearance, true)
-                                1 -> SuperUserPager(navController, dockClearance, true)
-                                2 -> ModulePager(dockClearance, true)
+                                1 -> if (isFullFeatured) SuperUserPager(navController, dockClearance, true)
+                                2 -> if (isFullFeatured) ModulePager(dockClearance, true)
                                 3 -> SettingPager(navController, dockClearance, true)
                             }
                         }
@@ -980,6 +991,7 @@ fun MainScreen(
                         animationsEnabled = sidebarThemeState.startupAnimEnabled,
                         backdrop = LocalAppBackgroundBackdrop.current ?: dockBackdrop,
                         onSelectPage = { page -> mainPagerState.animateToPage(page) },
+                        rootTabsVisible = isFullFeatured,
                         modifier = Modifier.align(Alignment.BottomCenter),
                     )
                 }

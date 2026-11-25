@@ -1,5 +1,6 @@
 package com.kazesu.manager.ui.screen.install
 
+import android.os.Build
 import com.kazesu.manager.ui.component.miuix.AppCard
 import com.kazesu.manager.ui.component.miuix.AppScaffold
 import com.kazesu.manager.ui.kernelFlash.KpmPatchOption
@@ -275,50 +276,59 @@ internal fun InstallScreenMiuix(
                         }
                     }
 
-                    if (uiState.canPatchKpm) {
-                        AppCard(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 12.dp),
-                        ) {
-                            OverlayDropdownPreference(
-                                title = stringResource(R.string.install_kpm_operation),
-                                summary = stringResource(R.string.install_kpm_summary),
-                                items = listOf(stringResource(R.string.kpm_follow_kernel_file), stringResource(R.string.enable_kpm_patch), stringResource(R.string.enable_kpm_undo_patch)),
-                                selectedIndex = KpmPatchOption.entries.indexOf(uiState.kpmPatchOption),
-                                onSelectedIndexChange = { actions.onKpmOptionChange(KpmPatchOption.entries[it]) },
-                            )
-                            AnimatedVisibility(visible = uiState.canSelectKpmBoot) {
-                                Column {
-                                    BasicComponent(
-                                        title = stringResource(R.string.install_kpm_manual),
-                                        summary = uiState.kpmBootUri?.lastPathSegment
-                                            ?: stringResource(
-                                                if (uiState.installMethod == null) R.string.install_kpm_auto_current_boot
-                                                else R.string.install_kpm_auto
-                                            ),
-                                        onClick = actions.onToggleKpmBoot,
-                                        endActions = {
-                                            Icon(
-                                                if (uiState.kpmBootExpanded) MiuixIcons.ExpandLess else MiuixIcons.ExpandMore,
-                                                contentDescription = stringResource(R.string.expand),
-                                                modifier = Modifier.size(16.dp),
-                                            )
-                                        },
-                                    )
-                                    AnimatedVisibility(visible = uiState.kpmBootExpanded) {
-                                        Column {
-                                            BasicComponent(
-                                                title = stringResource(R.string.select_file),
-                                                summary = uiState.kpmBootUri?.lastPathSegment,
-                                                onClick = actions.onPatchKpmFile,
-                                            )
-                                            if (uiState.kpmBootUri != null) {
-                                                BasicComponent(
-                                                    title = stringResource(R.string.install_kpm_clear),
-                                                    onClick = actions.onClearKpmBoot,
-                                                )
+                    AppCard(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 12.dp),
+                    ) {
+                        OverlayDropdownPreference(
+                            enabled = uiState.canPatchKpm,
+                            title = stringResource(R.string.install_kpm_operation),
+                            summary = if (uiState.canPatchKpm) {
+                                stringResource(R.string.install_kpm_summary)
+                            } else {
+                                stringResource(R.string.install_kpm_needs_arm64, Build.SUPPORTED_ABIS.joinToString())
+                            },
+                            items = listOf(stringResource(R.string.kpm_follow_kernel_file), stringResource(R.string.enable_kpm_patch), stringResource(R.string.enable_kpm_undo_patch)),
+                            selectedIndex = KpmPatchOption.entries.indexOf(uiState.kpmPatchOption),
+                            onSelectedIndexChange = { actions.onKpmOptionChange(KpmPatchOption.entries[it]) },
+                        )
+                        AnimatedVisibility(visible = uiState.canSelectKpmBoot) {
+                            Column {
+                                BasicComponent(
+                                    title = stringResource(
+                                        if (uiState.rootAvailable) R.string.install_kpm_manual
+                                        else R.string.install_kpm_manual_required_title
+                                    ),
+                                    summary = uiState.kpmBootUri?.lastPathSegment
+                                        ?: stringResource(
+                                            when {
+                                                !uiState.rootAvailable -> R.string.install_kpm_manual_required
+                                                uiState.installMethod == null -> R.string.install_kpm_auto_current_boot
+                                                else -> R.string.install_kpm_auto
                                             }
+                                        ),
+                                    onClick = actions.onToggleKpmBoot,
+                                    endActions = {
+                                        Icon(
+                                            if (uiState.kpmBootExpanded) MiuixIcons.ExpandLess else MiuixIcons.ExpandMore,
+                                            contentDescription = stringResource(R.string.expand),
+                                            modifier = Modifier.size(16.dp),
+                                        )
+                                    },
+                                )
+                                AnimatedVisibility(visible = uiState.kpmBootExpanded) {
+                                    Column {
+                                        BasicComponent(
+                                            title = stringResource(R.string.select_file),
+                                            summary = uiState.kpmBootUri?.lastPathSegment,
+                                            onClick = actions.onPatchKpmFile,
+                                        )
+                                        if (uiState.kpmBootUri != null) {
+                                            BasicComponent(
+                                                title = stringResource(R.string.install_kpm_clear),
+                                                onClick = actions.onClearKpmBoot,
+                                            )
                                         }
                                     }
                                 }

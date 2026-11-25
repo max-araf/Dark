@@ -1,6 +1,5 @@
 package com.kazesu.manager.ui.component.splash
 
-import android.os.Build
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -54,7 +53,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kazesu.manager.R
 import com.kazesu.manager.ui.component.DN_LOGO_END_MS
 import com.kazesu.manager.ui.component.DN_LOGO_TOTAL_MS
-import com.kazesu.manager.ui.component.DarkNightBrandBlue
 import com.kazesu.manager.ui.component.DarkNightLogo
 import com.kazesu.manager.ui.theme.DarkNightThemeStore
 import kotlinx.coroutines.delay
@@ -77,12 +75,12 @@ private fun easeOutCubic(x: Float): Float = 1f - (1f - x).pow(3)
 private fun lerpF(a: Float, b: Float, t: Float): Float = a + (b - a) * t
 
 /**
- * "AURORA ORBIT" startup.
- *  - Android 12+: the system splash AVD (ic_splash_logo_animated) already played 0..1000ms (logo assembles, the two
- *    frosted squares orbit 4 directions and land HOME). This composable starts at t=1000 from the SAME final pose.
- *  - API < 31: this composable plays the whole 0..2400ms timeline itself.
- *  - 1000..2400ms: aurora bloom (accent glow + ring pulse + 3 drifting orbs + topographic contour fade-in),
- *    shine sweep, wordmark letter-by-letter reveal, tagline. Everything is derived from the palette accent.
+ * "AURORA ORBIT" startup (v8.1: fully palette-coloured).
+ *  - The system splash (all API levels) is only the dark background + an EMPTY icon (ic_splash_empty), so the user never
+ *    sees a fixed blue logo.
+ *  - This composable plays the whole 0..2400ms timeline: logo assembles + two frosted squares orbit 4 directions and
+ *    land HOME (0..1000ms), aurora bloom + ring pulse + drifting orbs + contour (1000..2400ms), wordmark letter by
+ *    letter, tagline. Everything is derived from dnState.palette.primaryGlow.
  */
 @Composable
 fun SplashScreen(
@@ -101,14 +99,12 @@ fun SplashScreen(
     var splashDismissed by remember { mutableStateOf(false) }
 
     val animEnabled = dnState.startupAnimEnabled
-    val startMs = when {
-        !animEnabled -> SPLASH_END_MS               // reduce-motion / animation off: final pose immediately
-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> AURORA_START_MS
-        else -> 0f
-    }
+    // v8.1: the system splash now shows an EMPTY icon on every API level, so this composable plays the whole
+    // 0..2400ms timeline itself (assemble -> orbit -> aurora -> wordmark) in the live PALETTE colour.
+    val startMs = if (animEnabled) 0f else SPLASH_END_MS   // animation off: final pose immediately
     val timeline = remember { Animatable(startMs) }
-    // Splash = BRAND blue (the system-splash AVD is a static resource and cannot follow the palette; keeps hand-off seamless).
-    val accent = DarkNightBrandBlue
+    // v8.1 FIX: splash follows the selected palette (Aura, Royal Violet, Crimson, Forest ...), no more fixed blue.
+    val accent = dnState.palette.primaryGlow
     val lite = remember(accent) { lerp(accent, Color.White, 0.38f) }
 
     LaunchedEffect(Unit) {

@@ -61,7 +61,6 @@ fun BottomBarMiuix(
     modifier: Modifier,
 ) {
     val fullFeatured = Natives.isFullFeatured()
-    if (!fullFeatured) return
 
     val mainState = LocalMainPagerState.current
     val enableFloatingBottomBar = LocalEnableFloatingBottomBar.current
@@ -69,7 +68,7 @@ fun BottomBarMiuix(
     val progressiveBlur = LocalEnableProgressiveBlur.current && isRuntimeShaderSupported()
 
     val bottomBarIcons = rememberBottomBarIconPaths()
-    val items = BottomBarDestination.entries.map { destination ->
+    val items = visibleBottomBarDestinations(fullFeatured).map { destination ->
         Triple(
             destination,
             customText(destination.textKey),
@@ -82,8 +81,9 @@ fun BottomBarMiuix(
                 modifier = modifier,
                 color = if (blurBackdrop != null) Color.Transparent else backgroundAwareColor(MiuixTheme.colorScheme.surface),
                 content = {
-                    items.forEachIndexed { index, (destination, label, iconPath) ->
-                        val selected = mainState.selectedPage == index
+                    items.forEach { (destination, label, iconPath) ->
+                        val pageIndex = destination.ordinal
+                        val selected = mainState.selectedPage == pageIndex
                         if (iconPath.isNullOrBlank()) {
                             NavigationBarItem(
                                 modifier = Modifier.weight(1f),
@@ -91,18 +91,18 @@ fun BottomBarMiuix(
                                 label = label,
                                 selected = selected,
                                 onClick = {
-                                    mainState.animateToPage(index)
+                                    mainState.animateToPage(pageIndex)
                                 },
-                                badge = navigationBadgeFor(index, navigationBadge),
+                                badge = navigationBadgeFor(pageIndex, navigationBadge),
                             )
                         } else {
                             MiuixCustomNavigationBarItem(
                                 selected = selected,
-                                onClick = { mainState.animateToPage(index) },
+                                onClick = { mainState.animateToPage(pageIndex) },
                                 icon = destination.icon,
                                 iconPath = iconPath,
                                 label = label,
-                                badge = navigationBadgeFor(index, navigationBadge),
+                                badge = navigationBadgeFor(pageIndex, navigationBadge),
                             )
                         }
                     }
@@ -118,24 +118,25 @@ fun BottomBarMiuix(
                     detectTapGestures { }
                 }
                 .padding(start = 28.dp, end = 28.dp, bottom = bottomPadding),
-            selectedIndex = mainState.selectedPage,
-            onSelected = { mainState.animateToPage(it) },
+            selectedIndex = items.indexOfFirst { it.first.ordinal == mainState.selectedPage }.coerceAtLeast(0),
+            onSelected = { pos -> items.getOrNull(pos)?.let { mainState.animateToPage(it.first.ordinal) } },
             backdrop = backdrop,
             tabsCount = items.size,
             isBlurEnabled = enableFloatingBottomBarBlur,
             progressiveBlur = progressiveBlur,
         ) { activateTab ->
-            items.forEachIndexed { index, (destination, label, iconPath) ->
+            items.forEachIndexed { pos, (destination, label, iconPath) ->
+                val pageIndex = destination.ordinal
                 FloatingBottomBarItem(
-                    selected = mainState.selectedPage == index,
+                    selected = mainState.selectedPage == pageIndex,
                     onClick = {
-                        activateTab(index)
+                        activateTab(pos)
                     },
                     modifier = Modifier.defaultMinSize(minWidth = 76.dp)
                 ) {
                     // Icon and label take LocalContentColor so the FloatingBottomBar backdrop copy
                     // can recolor them to the accent tone inside the indicator pill.
-                    val badge = navigationBadgeFor(index, navigationBadge, floating = true)
+                    val badge = navigationBadgeFor(pageIndex, navigationBadge, floating = true)
                     val icon: @Composable () -> Unit = {
                         BottomBarIconContent(
                             icon = destination.icon,
@@ -220,6 +221,10 @@ private fun androidx.compose.foundation.layout.RowScope.MiuixCustomNavigationBar
         )
     }
 }
+
+internal fun visibleBottomBarDestinations(full: Boolean): List<BottomBarDestination> =
+    if (full) BottomBarDestination.entries
+    else listOf(BottomBarDestination.Home, BottomBarDestination.Setting)
 
 enum class BottomBarDestination(
     val textKey: CustomTextKey,

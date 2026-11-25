@@ -83,6 +83,7 @@ fun DarkNightPillDock(
     backdrop: LayerBackdrop?,
     onSelectPage: (Int) -> Unit,
     modifier: Modifier = Modifier,
+    rootTabsVisible: Boolean = true,
 ) {
     val context = LocalContext.current
     DarkNightThemeStore.init(context)
@@ -100,8 +101,12 @@ fun DarkNightPillDock(
     val dockShape = RoundedCornerShape(38.dp)
     val haloShape = RoundedCornerShape(44.dp)
 
+    val tabs = remember(rootTabsVisible) {
+        if (rootTabsVisible) DockTabs else DockTabs.filter { it.index == 0 || it.index == 3 }
+    }
+    val selectedPos = tabs.indexOfFirst { it.index == selectedPage }.coerceAtLeast(0)
     val bubbleOffsetX by animateDpAsState(
-        targetValue = (itemSize + itemGap) * selectedPage.coerceIn(0, DockTabs.lastIndex),
+        targetValue = (itemSize + itemGap) * selectedPos,
         animationSpec = if (animationsEnabled) {
             spring(dampingRatio = 0.75f, stiffness = 400f)
         } else {
@@ -282,7 +287,7 @@ fun DarkNightPillDock(
                     horizontalArrangement = Arrangement.spacedBy(itemGap),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    DockTabs.forEach { tab ->
+                    tabs.forEach { tab ->
                         val selected = selectedPage == tab.index
                         val targetTint = when {
                             isLight -> if (selected) glass.accent else Color(0xFF0B1020).copy(alpha = 0.62f)

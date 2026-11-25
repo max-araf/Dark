@@ -81,18 +81,19 @@ fun BottomBarMaterial(
     modifier: Modifier = Modifier,
 ) {
     val fullFeatured = Natives.isFullFeatured()
-    if (!fullFeatured) return
 
     val mainPagerState = LocalMainPagerState.current
     val bottomBarIcons = rememberBottomBarIconPaths()
     val progressiveBlur = LocalEnableProgressiveBlur.current && isRuntimeShaderSupported()
 
-    val items = listOf(
-        MaterialNavItem(CustomTextKey.PAGE_HOME, Icons.Filled.Home, Icons.Outlined.Home, bottomBarIcons["home"]),
-        MaterialNavItem(CustomTextKey.PAGE_SUPERUSER, Icons.Filled.Shield, Icons.Outlined.Shield, bottomBarIcons["superuser"]),
-        MaterialNavItem(CustomTextKey.PAGE_MODULES, Icons.Filled.Extension, Icons.Outlined.Extension, bottomBarIcons["module"]),
-        MaterialNavItem(CustomTextKey.PAGE_SETTINGS, Icons.Filled.Settings, Icons.Outlined.Settings, bottomBarIcons["setting"])
-    )
+    val items = visibleBottomBarDestinations(fullFeatured).map { destination ->
+        when (destination) {
+            BottomBarDestination.Home -> MaterialNavItem(destination.ordinal, CustomTextKey.PAGE_HOME, Icons.Filled.Home, Icons.Outlined.Home, bottomBarIcons["home"])
+            BottomBarDestination.SuperUser -> MaterialNavItem(destination.ordinal, CustomTextKey.PAGE_SUPERUSER, Icons.Filled.Shield, Icons.Outlined.Shield, bottomBarIcons["superuser"])
+            BottomBarDestination.Module -> MaterialNavItem(destination.ordinal, CustomTextKey.PAGE_MODULES, Icons.Filled.Extension, Icons.Outlined.Extension, bottomBarIcons["module"])
+            BottomBarDestination.Setting -> MaterialNavItem(destination.ordinal, CustomTextKey.PAGE_SETTINGS, Icons.Filled.Settings, Icons.Outlined.Settings, bottomBarIcons["setting"])
+        }
+    }
 
     if (LocalEnableFloatingBottomBarBlur.current && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         LiquidBottomBarMaterial(
@@ -146,18 +147,18 @@ fun BottomBarMaterial(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                items.forEachIndexed { index, item ->
-                    val selected = mainPagerState.selectedPage == index
+                items.forEach { item ->
+                    val selected = mainPagerState.selectedPage == item.pageIndex
                     FloatingNavItem(
                         selected = selected,
                         label = customText(item.label),
                         icon = if (selected) item.selectedIcon else item.unselectedIcon,
                         iconPath = item.iconPath,
-                        badge = badgeFor(index, navigationBadge),
+                        badge = badgeFor(item.pageIndex, navigationBadge),
                         progressiveBlur = progressiveBlur,
                         onClick = {
                             if (!selected) {
-                                mainPagerState.animateToPage(index)
+                                mainPagerState.animateToPage(item.pageIndex)
                             }
                         },
                     )
@@ -187,8 +188,8 @@ private fun LiquidBottomBarMaterial(
                 detectTapGestures { }
             }
             .padding(start = 28.dp, end = 28.dp, bottom = bottomPadding),
-        selectedIndex = mainPagerState.selectedPage,
-        onSelected = { mainPagerState.animateToPage(it) },
+        selectedIndex = items.indexOfFirst { it.pageIndex == mainPagerState.selectedPage }.coerceAtLeast(0),
+        onSelected = { pos -> items.getOrNull(pos)?.let { mainPagerState.animateToPage(it.pageIndex) } },
         backdrop = backdrop,
         tabsCount = items.size,
         isBlurEnabled = true,
@@ -197,11 +198,11 @@ private fun LiquidBottomBarMaterial(
         tabContentColor = MaterialTheme.colorScheme.onSurface,
         surfaceContainer = MaterialTheme.colorScheme.surfaceContainerHigh,
     ) { activateTab ->
-        items.forEachIndexed { index, item ->
-            val selected = mainPagerState.selectedPage == index
+        items.forEachIndexed { pos, item ->
+            val selected = mainPagerState.selectedPage == item.pageIndex
             FloatingBottomBarItem(
                 selected = selected,
-                onClick = { activateTab(index) },
+                onClick = { activateTab(pos) },
                 modifier = Modifier.defaultMinSize(minWidth = 76.dp)
             ) {
                 // The bar recolors its indicator copy through the Miuix content color; forward it to Material.
@@ -210,7 +211,7 @@ private fun LiquidBottomBarMaterial(
                         icon = if (selected) item.selectedIcon else item.unselectedIcon,
                         iconPath = item.iconPath,
                         contentDescription = customText(item.label),
-                        badge = badgeFor(index, navigationBadge),
+                        badge = badgeFor(item.pageIndex, navigationBadge),
                     )
                     Text(
                         text = customText(item.label),
@@ -227,6 +228,7 @@ private fun LiquidBottomBarMaterial(
 }
 
 private data class MaterialNavItem(
+    val pageIndex: Int,
     val label: CustomTextKey,
     val selectedIcon: ImageVector,
     val unselectedIcon: ImageVector,

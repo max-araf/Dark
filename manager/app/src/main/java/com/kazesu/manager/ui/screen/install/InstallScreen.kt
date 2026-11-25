@@ -144,9 +144,7 @@ fun InstallScreen(
                     if (isAbDevice) add(InstallMethod.DirectInstallToInactiveSlot)
                 }
             }
-            if (rootAvailable) {
-                add(InstallMethod.HorizonKernel(summary = horizonKernelSummary))
-            }
+            add(InstallMethod.HorizonKernel(summary = horizonKernelSummary))
         }
     }
 
@@ -169,6 +167,12 @@ fun InstallScreen(
                 anyKernel3State.onSlotSelected(slot)
             }
         )
+    }
+
+    LaunchedEffect(rootAvailable, kpmEnabled, installMethod) {
+        if (!rootAvailable && kpmEnabled && installMethod == null) {
+            kpmBootExpanded = true
+        }
     }
 
     val isOta = installMethod is InstallMethod.DirectInstallToInactiveSlot
@@ -206,7 +210,11 @@ fun InstallScreen(
     val blockModulesInvalidMessage = stringResource(R.string.install_block_modules_invalid)
     val onInstall = {
         if (isStandaloneKpm) {
-            navigator.push(Route.Flash(FlashIt.PatchKpmBoot(boot = kpmBootUri, undo = kpmUndo)))
+            if (!rootAvailable && kpmBootUri == null) {
+                showMessage(resources.getString(R.string.install_kpm_manual_required))
+            } else {
+                navigator.push(Route.Flash(FlashIt.PatchKpmBoot(boot = kpmBootUri, undo = kpmUndo)))
+            }
         } else if (!isBlockModulesValid(effectiveBlockModules)) {
             showMessage(blockModulesInvalidMessage)
         } else installMethod?.let { method ->
@@ -383,6 +391,7 @@ fun InstallScreen(
         kpmBootExpanded = kpmBootExpanded,
         kpmBootUri = kpmBootUri,
         canPatchKpm = canPatchKpm,
+        rootAvailable = rootAvailable,
         blockModulesEnabled = blockModulesEnabled,
         blockModules = blockModules,
         blockModulesValid = isBlockModulesValid(effectiveBlockModules),
@@ -393,7 +402,9 @@ fun InstallScreen(
     val actions = InstallScreenActions(
         onBack = dropUnlessResumed { navigator.pop() },
         onSelectMethod = { method ->
-            if (method is InstallMethod.HorizonKernel && method.uri != null) {
+            if (method is InstallMethod.HorizonKernel && !rootAvailable) {
+                showMessage(resources.getString(R.string.install_anykernel_root_required))
+            } else if (method is InstallMethod.HorizonKernel && method.uri != null) {
                 anyKernel3State.onHorizonKernelSelected(method)
             } else {
                 installMethod = method
@@ -401,12 +412,16 @@ fun InstallScreen(
         },
         onDownloadFile = { downloadDialogShown = true },
         onSelectBootImage = { method ->
-            // 在打开文件选择器之前，先设置 installMethod
-            installMethod = method
-            selectImageLauncher.launch(Intent(Intent.ACTION_GET_CONTENT).apply {
-                type = "application/*"
-                putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("application/octet-stream", "application/zip"))
-            })
+            if (method is InstallMethod.HorizonKernel && !rootAvailable) {
+                showMessage(resources.getString(R.string.install_anykernel_root_required))
+            } else {
+                // 在打开文件选择器之前，先设置 installMethod
+                installMethod = method
+                selectImageLauncher.launch(Intent(Intent.ACTION_GET_CONTENT).apply {
+                    type = "application/*"
+                    putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("application/octet-stream", "application/zip"))
+                })
+            }
         },
         onUploadLkm = {
             selectLkmLauncher.launch(Intent(Intent.ACTION_GET_CONTENT).apply { type = "application/octet-stream" })
@@ -496,7 +511,11 @@ fun InstallScreen(
             }
         },
         onHorizonKernelSelected = { method ->
-            anyKernel3State.onHorizonKernelSelected(method)
+            if (!rootAvailable) {
+                showMessage(resources.getString(R.string.install_anykernel_root_required))
+            } else {
+                anyKernel3State.onHorizonKernelSelected(method)
+            }
         },
         onReopenSlotDialog = { method ->
             anyKernel3State.onReopenSlotDialog(method)

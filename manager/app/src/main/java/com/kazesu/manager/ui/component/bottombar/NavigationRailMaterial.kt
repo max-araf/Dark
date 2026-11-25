@@ -54,16 +54,17 @@ fun NavigationRailMaterial(
     modifier: Modifier = Modifier,
 ) {
     val fullFeatured = Natives.isFullFeatured()
-    if (!fullFeatured) return
 
     val mainPagerState = LocalMainPagerState.current
 
-    val items = listOf(
-        Triple(CustomTextKey.PAGE_HOME, Icons.Filled.Home, Icons.Outlined.Home),
-        Triple(CustomTextKey.PAGE_SUPERUSER, Icons.Filled.Shield, Icons.Outlined.Shield),
-        Triple(CustomTextKey.PAGE_MODULES, Icons.Filled.Extension, Icons.Outlined.Extension),
-        Triple(CustomTextKey.PAGE_SETTINGS, Icons.Filled.Settings, Icons.Outlined.Settings)
-    )
+    val items = visibleBottomBarDestinations(fullFeatured).map { destination ->
+        when (destination) {
+            BottomBarDestination.Home -> destination to Triple(CustomTextKey.PAGE_HOME, Icons.Filled.Home, Icons.Outlined.Home)
+            BottomBarDestination.SuperUser -> destination to Triple(CustomTextKey.PAGE_SUPERUSER, Icons.Filled.Shield, Icons.Outlined.Shield)
+            BottomBarDestination.Module -> destination to Triple(CustomTextKey.PAGE_MODULES, Icons.Filled.Extension, Icons.Outlined.Extension)
+            BottomBarDestination.Setting -> destination to Triple(CustomTextKey.PAGE_SETTINGS, Icons.Filled.Settings, Icons.Outlined.Settings)
+        }
+    }
 
     val settingsRepo = remember { SettingsRepositoryImpl() }
     val state = rememberWideNavigationRailState(
@@ -110,21 +111,23 @@ fun NavigationRailMaterial(
             }
         },
     ) {
-        items.forEachIndexed { index, (label, selectedIcon, unselectedIcon) ->
-            val selected = mainPagerState.selectedPage == index
+        items.forEach { (destination, meta) ->
+            val (label, selectedIcon, unselectedIcon) = meta
+            val pageIndex = destination.ordinal
+            val selected = mainPagerState.selectedPage == pageIndex
             WideNavigationRailItem(
                 railExpanded = expanded,
                 selected = selected,
                 onClick = {
                     if (!selected) {
-                        mainPagerState.animateToPage(index)
+                        mainPagerState.animateToPage(pageIndex)
                     }
                 },
                 icon = {
                     NavigationIconWithBadge(
                         icon = if (selected) selectedIcon else unselectedIcon,
                         contentDescription = customText(label),
-                        badge = badgeFor(index, navigationBadge),
+                        badge = badgeFor(pageIndex, navigationBadge),
                     )
                 },
                 label = {
